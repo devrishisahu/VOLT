@@ -8,6 +8,6 @@ router.get("/" , protect.forUser ,orderController.getTickets)
 router.get("/:tid" , protect.forUser ,orderController.getTicket)
 router.put("/:tid" , protect.forUser ,orderController.cancelTicket)
 router.post("/:eid" , protect.forUser ,orderController.bookTicket)
+router.post("/check/coupon" , protect.forUser ,orderController.checkCoupon)
 
-
-export default router
+export default router;

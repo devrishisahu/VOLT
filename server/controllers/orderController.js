@@ -1,4 +1,4 @@
-import Coupon from "../models/CouponModel.js";
+import Coupon from "../models/couponModel.js";
 import Event from "../models/eventModel.js";
 import Order from "../models/orderModel.js";
 import User from "../models/userModel.js";
@@ -11,7 +11,7 @@ const getTickets = async (req, res) => {
     console.log(req.user)
 
   if (!myTickets) {
-    return res.status(404);
+    res.status(404);
     throw new Error ("Tickets Not Booked Yet...");
   }
   res.status(200).json(myTickets);
@@ -143,8 +143,6 @@ const bookTicket = async (req, res) => {
     throw new Error("Order Not Accepted");
   }
   res.status(200).json(order);
-
-  res.send("Ticket booked");
 };
 
 const cancelTicket = async (req, res) => {
@@ -210,6 +208,22 @@ const cancelTicket = async (req, res) => {
   res.status(200).json(updatedTicket);
 };
 
-const orderController = { bookTicket, cancelTicket, getTickets, getTicket };
+const checkCoupon = async (req, res) => {
+  const { couponCode } = req.body;
+  if (!couponCode) {
+    res.status(400);
+    throw new Error("Please enter a coupon code");
+  }
+
+  const coupon = await Coupon.findOne({ couponCode, isActive: true });
+  if (!coupon) {
+    res.status(404);
+    throw new Error("Invalid or Expired Coupon");
+  }
+
+  res.status(200).json(coupon);
+};
+
+const orderController = { bookTicket, cancelTicket, getTickets, getTicket, checkCoupon };
 
 export default orderController;

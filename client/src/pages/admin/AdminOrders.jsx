@@ -1,5 +1,8 @@
-import { orders } from '../../data/mockData';
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchAllOrders } from '../../features/admin/adminSlice';
 import AdminLayout from '../../components/AdminLayout';
+import Loading from '../../components/Loading';
 
 const statusColors = {
   confirmed: 'bg-green-500/20 text-green-400',
@@ -10,6 +13,19 @@ const statusColors = {
 const statusTabs = ['All', 'Confirmed', 'Pending', 'Cancelled'];
 
 export default function AdminOrders() {
+  const [activeTab, setActiveTab] = useState('All');
+  const dispatch = useDispatch();
+  const { orders, isLoading } = useSelector((state) => state.admin);
+
+  useEffect(() => {
+    dispatch(fetchAllOrders());
+  }, [dispatch]);
+
+  const filteredOrders = activeTab === 'All' 
+    ? orders 
+    : orders.filter(o => o.status.toLowerCase() === activeTab.toLowerCase());
+
+  if (isLoading) return <Loading />;
   return (
     <AdminLayout current="/admin/orders">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
@@ -23,8 +39,12 @@ export default function AdminOrders() {
       </div>
 
       <div className="flex gap-2 mb-6">
-        {statusTabs.map((tab, i) => (
-          <button key={tab} className={`px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all ${i === 0 ? 'bg-[#f72585] text-white' : 'text-white/40 hover:text-white hover:bg-white/5'}`}>
+        {statusTabs.map((tab) => (
+          <button 
+            key={tab} 
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all ${activeTab === tab ? 'bg-[#f72585] text-white' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+          >
             {tab}
           </button>
         ))}
@@ -45,7 +65,7 @@ export default function AdminOrders() {
               </tr>
             </thead>
             <tbody>
-              {orders.map((order, i) => (
+              {filteredOrders.map((order, i) => (
                 <tr key={order._id} className={`border-b border-white/5 last:border-b-0 hover:bg-white/[0.03] transition-colors ${i % 2 === 0 ? 'bg-white/[0.01]' : ''}`}>
                   <td className="p-4"><span className="text-sm text-white/50 font-mono">{order._id.toUpperCase()}</span></td>
                   <td className="p-4"><span className="text-sm text-white font-medium">{order.event.title}</span></td>

@@ -1,6 +1,6 @@
 import User from "../models/userModel.js";
 import Event from"../models/eventModel.js";
-import Coupon from "../models/CouponModel.js";
+import Coupon from "../models/couponModel.js";
 import Order from "../models/orderModel.js";
 
 const getAllUsers = async(req, res) => {
@@ -88,7 +88,7 @@ const getAllRatings = (req, res) => {
 
 const getAllOrders = async(req, res) => {
  
-  const orders = await Order.find()
+  const orders = await Order.find().populate('user').populate('event')
 
   if(!orders){
     res.status(404)
@@ -155,7 +155,25 @@ const updateCoupon = async( req , res ) =>{
 
 }
 
-const adminController = { getAllUsers , updateUser , getAllEvents , getAllRatings, getAllOrders, getAllCoupons ,updateEvent , createCoupon , updateCoupon};
+const deleteCoupon = async (req, res) => {
+  const coupon = await Coupon.findByIdAndDelete(req.params.cid);
+  if (!coupon) {
+    res.status(404);
+    throw new Error("Coupon Not Found");
+  }
+  res.status(200).json({ id: req.params.cid });
+};
+
+const deleteEvent = async (req, res) => {
+  const event = await Event.findByIdAndDelete(req.params.eid);
+  if (!event) {
+    res.status(404);
+    throw new Error("Event Not Found");
+  }
+  res.status(200).json({ id: req.params.eid });
+};
+
+const adminController = { getAllUsers , updateUser , getAllEvents , getAllRatings, getAllOrders, getAllCoupons ,updateEvent , createCoupon , updateCoupon, deleteCoupon, deleteEvent};
 
 export default adminController
 

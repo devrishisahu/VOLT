@@ -1,6 +1,10 @@
-import { Link } from 'react-router-dom';
-import { pendingEvents, currentUser } from '../data/mockData';
+import { Link, useNavigate } from 'react-router-dom';
 import Footer from '../components/Footer';
+import { useState, useEffect, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { createEvent, reset } from '../features/event/eventSlice';
+import { toast } from 'react-toastify';
+import Loading from '../components/Loading';
 
 const statusStyles = {
   pending: { bg: 'bg-amber-500/10 border-amber-500/20', text: 'text-amber-400', label: '⏳ Pending Review' },
@@ -8,9 +12,72 @@ const statusStyles = {
   rejected: { bg: 'bg-red-500/10 border-red-500/20', text: 'text-red-400', label: '✗ Rejected' },
 };
 
-const mySubmissions = pendingEvents.filter(e => e.submittedBy === 'Arjun Mehta');
-
 export default function SubmitEvent() {
+  const [formData, setFormData] = useState({
+    title: '',
+    eventArtistName: '',
+    description: '',
+    eventLocation: '',
+    eventDate: '',
+    totalSeats: '',
+    ticketPrice: '',
+    duration: '',
+    image: null
+  });
+
+  const { title, eventArtistName, description, eventLocation, eventDate, totalSeats, ticketPrice, duration, image } = formData;
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const submitted = useRef(false);
+
+  const { isLoading, isSuccess, isError, message } = useSelector((state) => state.event);
+  const mySubmissions = [];
+
+
+  useEffect(() => {
+    if (submitted.current) {
+      if (isError && message) {
+        toast.error(message);
+        dispatch(reset());
+        submitted.current = false;
+      }
+      if (isSuccess) {
+        toast.success("Event Submitted Successfully!");
+        dispatch(reset());
+        submitted.current = false;
+        navigate('/');
+      }
+    }
+  }, [isError, isSuccess, message, navigate, dispatch]);
+
+  const onChange = (e) => {
+    if (e.target.name === 'image') {
+      setFormData({ ...formData, image: e.target.files[0] });
+    } else {
+      setFormData({ ...formData, [e.target.name]: e.target.value });
+    }
+  };
+
+  const onSubmit = (e) => {
+    e.preventDefault();
+    
+    const eventData = new FormData();
+    eventData.append('title', title);
+    eventData.append('eventArtistName', eventArtistName);
+    eventData.append('description', description);
+    eventData.append('eventLocation', eventLocation);
+    eventData.append('eventDate', eventDate);
+    eventData.append('totalSeats', totalSeats);
+    eventData.append('ticketPrice', ticketPrice);
+    eventData.append('duration', duration);
+    eventData.append('eventImage', image);
+
+    submitted.current = true;
+    dispatch(createEvent(eventData));
+  };
+
+  if (isLoading) return <Loading />;
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       <div className="px-6 md:px-16 pt-10 md:pt-16 pb-20">
@@ -25,7 +92,7 @@ export default function SubmitEvent() {
           </div>
 
           {/* Create Event Form */}
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 mb-12 animate-fade-in-up animation-delay-300">
+          <form onSubmit={onSubmit} className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 mb-12 animate-fade-in-up animation-delay-300">
             <h2 className="text-sm font-semibold text-white/40 uppercase tracking-widest mb-6 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#f72585]" />
               New Event Submission
@@ -34,59 +101,117 @@ export default function SubmitEvent() {
             <div className="space-y-5">
               <div>
                 <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">Event Title *</label>
-                <input type="text" placeholder="e.g. Neon Nights Festival" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/20 outline-none focus:border-[#f72585]/50 transition-colors" />
+                <input 
+                  type="text" 
+                  name="title"
+                  value={title}
+                  onChange={onChange}
+                  placeholder="e.g. Neon Nights Festival" 
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/20 outline-none focus:border-[#f72585]/50 transition-colors" 
+                  required
+                />
               </div>
 
               <div>
                 <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">Description *</label>
-                <textarea rows={3} placeholder="Tell us about your event..." className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/20 outline-none focus:border-[#f72585]/50 transition-colors resize-none" />
+                <textarea 
+                  name="description"
+                  value={description}
+                  onChange={onChange}
+                  rows={3} 
+                  placeholder="Tell us about your event..." 
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/20 outline-none focus:border-[#f72585]/50 transition-colors resize-none" 
+                  required
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">Artist / Performer *</label>
-                  <input type="text" placeholder="e.g. DJ SPARK" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/20 outline-none focus:border-[#f72585]/50 transition-colors" />
+                  <input 
+                    type="text" 
+                    name="eventArtistName"
+                    value={eventArtistName}
+                    onChange={onChange}
+                    placeholder="e.g. DJ SPARK" 
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/20 outline-none focus:border-[#f72585]/50 transition-colors" 
+                    required
+                  />
                 </div>
                 <div>
-                  <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">Genre *</label>
-                  <select className="w-full bg-[#141414] border border-white/10 rounded-xl px-4 py-3.5 text-white/50 outline-none focus:border-[#f72585]/50 transition-colors [&>option]:bg-[#141414] [&>option]:text-white">
-                    <option>Select Genre</option>
-                    <option>EDM</option>
-                    <option>TECHNO</option>
-                    <option>POP</option>
-                    <option>ROCK</option>
-                    <option>JAZZ</option>
-                    <option>BASS</option>
-                    <option>HIP HOP</option>
-                  </select>
+                  <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">Duration *</label>
+                  <input 
+                    type="text" 
+                    name="duration"
+                    value={duration}
+                    onChange={onChange}
+                    placeholder="e.g. 3h 30min" 
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/20 outline-none focus:border-[#f72585]/50 transition-colors" 
+                    required
+                  />
                 </div>
                 <div>
                   <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">Event Date *</label>
-                  <input type="date" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white/50 outline-none focus:border-[#f72585]/50 transition-colors" />
+                  <input 
+                    type="date" 
+                    name="eventDate"
+                    value={eventDate}
+                    onChange={onChange}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white/50 outline-none focus:border-[#f72585]/50 transition-colors" 
+                    required
+                  />
                 </div>
-                <div>
-                  <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">Duration</label>
-                  <input type="text" placeholder="e.g. 3h 30min" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/20 outline-none focus:border-[#f72585]/50 transition-colors" />
-                </div>
+
                 <div>
                   <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">Venue / Location *</label>
-                  <input type="text" placeholder="e.g. Mumbai Arena, India" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/20 outline-none focus:border-[#f72585]/50 transition-colors" />
+                  <input 
+                    type="text" 
+                    name="eventLocation"
+                    value={eventLocation}
+                    onChange={onChange}
+                    placeholder="e.g. Mumbai Arena, India" 
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/20 outline-none focus:border-[#f72585]/50 transition-colors" 
+                    required
+                  />
                 </div>
                 <div>
                   <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">Total Seats</label>
-                  <input type="number" placeholder="e.g. 3000" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/20 outline-none focus:border-[#f72585]/50 transition-colors" />
+                  <input 
+                    type="number" 
+                    name="totalSeats"
+                    value={totalSeats}
+                    onChange={onChange}
+                    placeholder="e.g. 3000" 
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/20 outline-none focus:border-[#f72585]/50 transition-colors" 
+                    required
+                  />
                 </div>
                 <div>
                   <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">Ticket Price (₹)</label>
-                  <input type="number" placeholder="e.g. 1199" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/20 outline-none focus:border-[#f72585]/50 transition-colors" />
+                  <input 
+                    type="number" 
+                    name="ticketPrice"
+                    value={ticketPrice}
+                    onChange={onChange}
+                    placeholder="e.g. 1199" 
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/20 outline-none focus:border-[#f72585]/50 transition-colors" 
+                    required
+                  />
                 </div>
                 <div>
                   <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">Event Poster</label>
                   <label className="flex flex-col items-center justify-center w-full h-28 bg-white/5 border-2 border-dashed border-white/10 rounded-xl cursor-pointer hover:border-[#f72585]/50 transition-colors">
+                    <input 
+                      type="file" 
+                      name="image"
+                      onChange={onChange}
+                      className="hidden" 
+                      accept="image/*"
+                      required
+                    />
                     <span className="text-2xl mb-1">📷</span>
-                    <span className="text-xs text-white/40">Click to upload poster image</span>
+                    <span className="text-xs text-white/40">{image ? image.name : 'Click to upload poster image'}</span>
                     <span className="text-[10px] text-white/20 mt-1">PNG, JPG up to 5MB</span>
-                    <input type="file" accept="image/*" className="hidden" />
                   </label>
                 </div>
               </div>
@@ -97,11 +222,14 @@ export default function SubmitEvent() {
                 <p className="text-xs text-white/50 leading-relaxed">Your event will be reviewed by the VOLT admin team. Once approved, it will go live on the platform and users can book tickets. This usually takes 1-2 business days.</p>
               </div>
 
-              <button className="px-8 py-4 bg-[#f72585] text-white font-bold uppercase tracking-wider rounded-xl hover:shadow-[0_0_30px_rgba(247,37,133,0.5)] transition-all duration-300 text-sm">
+              <button 
+                type="submit"
+                className="px-8 py-4 bg-[#f72585] text-white font-bold uppercase tracking-wider rounded-xl hover:shadow-[0_0_30px_rgba(247,37,133,0.5)] transition-all duration-300 text-sm"
+              >
                 ⚡ Submit for Review
               </button>
             </div>
-          </div>
+          </form>
 
           {/* My Submissions */}
           <div>

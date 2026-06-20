@@ -11,6 +11,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import eventRoutes from "./routes/eventRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import commentRoutes from "./routes/commentRoutes.js"
+import creditRoutes from "./routes/creditRoutes.js";
 import giveAnswer from "./controllers/chatController.js";
 import protect from "./middleware/authMiddleware.js";
 
@@ -55,6 +56,9 @@ app.use("/api/order", orderRoutes);
 // Comment Routes
 
 app.use("/api/comment/" , commentRoutes)
+
+// Credit Routes
+app.use("/api/credits", creditRoutes);
 
 //Chat Routes
 

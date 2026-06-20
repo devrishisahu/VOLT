@@ -15,6 +15,7 @@ export default function Register() {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
+    name: "",
     email: "",
     phone: "",
     password: "",
@@ -23,22 +24,20 @@ export default function Register() {
   const { name, email, phone, password } = formData;
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
+    setFormData((prevState) => ({
+      ...prevState,
       [e.target.name]: e.target.value,
-    });
+    }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    console.log(formData);
     dispatch(registerUser(formData));
   };
 
   useEffect(() => {
     if (user) {
-      navigate("/Profile");
+      navigate(user.isAdmin ? "/admin" : "/profile");
     }
 
     if (isError && message) {
@@ -107,61 +106,69 @@ export default function Register() {
             <p className="text-white/40 mt-2">Create your account</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
             <div>
-              <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">
+              <label htmlFor="reg-name" className="block text-xs text-white/40 uppercase tracking-wider mb-2">
                 Full Name
               </label>
               <input
+                id="reg-name"
                 name="name"
                 value={name}
                 onChange={handleChange}
                 type="text"
                 placeholder="John Doe"
-                autoComplete="username"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/30 outline-none focus:border-[#f72585]/50 transition-colors"
+                autoComplete="off"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/30 focus:border-[#f72585]/50 transition-colors"
+                style={{ outline: 'none' }}
               />
             </div>
             <div>
-              <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">
+              <label htmlFor="reg-email" className="block text-xs text-white/40 uppercase tracking-wider mb-2">
                 Email
               </label>
               <input
+                id="reg-email"
                 name="email"
                 value={email}
                 onChange={handleChange}
                 type="email"
                 placeholder="your@email.com"
-                autoComplete="email"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/30 outline-none focus:border-[#f72585]/50 transition-colors"
+                autoComplete="off"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/30 focus:border-[#f72585]/50 transition-colors"
+                style={{ outline: 'none' }}
               />
             </div>
             <div>
-              <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">
+              <label htmlFor="reg-phone" className="block text-xs text-white/40 uppercase tracking-wider mb-2">
                 Phone
               </label>
               <input
+                id="reg-phone"
                 name="phone"
                 value={phone}
                 onChange={handleChange}
                 type="tel"
                 placeholder="+91 98765 43210"
-                autoComplete="phone"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/30 outline-none focus:border-[#f72585]/50 transition-colors"
+                autoComplete="off"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/30 focus:border-[#f72585]/50 transition-colors"
+                style={{ outline: 'none' }}
               />
             </div>
             <div>
-              <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">
+              <label htmlFor="reg-password" className="block text-xs text-white/40 uppercase tracking-wider mb-2">
                 Password
               </label>
               <input
+                id="reg-password"
                 name="password"
                 value={password}
                 onChange={handleChange}
                 type="password"
-                placeholder="••••••••"
+                placeholder="Enter your password"
                 autoComplete="new-password"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/30 outline-none focus:border-[#f72585]/50 transition-colors"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/30 focus:border-[#f72585]/50 transition-colors"
+                style={{ outline: 'none' }}
               />
             </div>
 

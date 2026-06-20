@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
-import { events } from '../data/mockData';
 import Footer from '../components/Footer';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { getEvents } from '../features/event/eventSlice';
+import Loading from '../components/Loading';
 
 const statusTabs = ['All', 'Upcoming', 'Ongoing', 'Expired'];
 
@@ -20,6 +23,16 @@ const statusColors = {
 };
 
 export default function Events() {
+  const dispatch = useDispatch();
+  const { events, isLoading } = useSelector((state) => state.event);
+
+  useEffect(() => {
+    dispatch(getEvents());
+  }, [dispatch]);
+
+  if (isLoading) {
+    return <Loading />;
+  }
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       {/* Hero Banner */}

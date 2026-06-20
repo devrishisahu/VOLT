@@ -22,7 +22,7 @@ export default function Navbar() {
           <Link to="/events" className="text-white/60 hover:text-white text-sm transition-colors">Events</Link>
          {
           user ? ( <button onClick={handleLogout} className="text-xs px-3 py-1.5 rounded-full bg-rose-600 text-white font-semibold hover:shadow-[0_0_20px_rgba(247,37,133,0.4)] transition-all"> Logout</button>) : (
-             <Link to="/Register" className="text-xs px-3 py-1.5 rounded-full bg-[#f72585] text-white font-semibold hover:shadow-[0_0_20px_rgba(247,37,133,0.4)] transition-all">Get Started</Link>
+             <Link to="/register" className="text-xs px-3 py-1.5 rounded-full bg-[#f72585] text-white font-semibold hover:shadow-[0_0_20px_rgba(247,37,133,0.4)] transition-all">Get Started</Link>
           )
          }
         </div>

@@ -1,9 +1,24 @@
 import { useParams, Link } from 'react-router-dom';
-import { orders } from '../data/mockData';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { getMyOrders } from '../features/order/orderSlice';
+import Loading from '../components/Loading';
 
 export default function TicketDetail() {
   const { orderId } = useParams();
-  const order = orders.find(o => o._id === orderId) || orders[0];
+  const dispatch = useDispatch();
+
+  const { orders, isLoading } = useSelector((state) => state.order);
+  const order = orders.find(o => o._id === orderId);
+
+  useEffect(() => {
+    if (orders.length === 0) {
+      dispatch(getMyOrders());
+    }
+  }, [orders, dispatch]);
+
+  if (isLoading || !order) return <Loading />;
+  
   const event = order.event;
 
   // Generate a mock QR-like pattern
@@ -72,7 +87,7 @@ export default function TicketDetail() {
                 </div>
                 <div>
                   <p className="text-[10px] text-white/30 uppercase tracking-widest">Seats</p>
-                  <p className="text-sm text-white font-semibold mt-1">{order.seats} {order.seats > 1 ? 'Tickets' : 'Ticket'}</p>
+                  <p className="text-sm text-white font-semibold mt-1">{order.numberOfSeats} {order.numberOfSeats > 1 ? 'Tickets' : 'Ticket'}</p>
                 </div>
               </div>
             </div>
@@ -116,7 +131,7 @@ export default function TicketDetail() {
                 </div>
               )}
 
-              <p className="text-[10px] text-white/15 mt-6 text-center">Booked on {order.createdAt} • VOLT™</p>
+              <p className="text-[10px] text-white/15 mt-6 text-center">Booked on {new Date(order.createdAt).toLocaleDateString()} • VOLT™</p>
             </div>
           </div>
 

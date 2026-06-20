@@ -19,7 +19,13 @@ export default function Sidebar() {
     { path: "/profile", label: "Profile", icon: "◉" },
   ];
 
-  const navItems = !user ? allNavItems.slice(0, 3) : allNavItems;
+  const navItems = !user 
+    ? allNavItems.slice(0, 3) 
+    : allNavItems.map(item => 
+        item.path === '/profile' && user.isAdmin 
+          ? { path: "/admin", label: "Admin Panel", icon: "⚙️" } 
+          : item
+      );
 
   const handleLogout = () => {
     dispatch(logoutUser())
@@ -81,7 +87,7 @@ export default function Sidebar() {
           ) : (
             <>
               <Link
-                to="/Register"
+                to="/register"
                 className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#f72585] rounded-lg text-white text-sm font-bold uppercase tracking-wider hover:shadow-[0_0_20px_rgba(247,37,133,0.4)] transition-all"
               >
                 <span className="shrink-0">⚡</span>

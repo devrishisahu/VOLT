@@ -1,6 +1,10 @@
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { events } from '../../data/mockData';
+import { fetchAllEvents, updateEventInfo, deleteEvent } from '../../features/admin/adminSlice';
 import AdminLayout from '../../components/AdminLayout';
+import Loading from '../../components/Loading';
+import { toast } from 'react-toastify';
 
 const statusColors = {
   upcoming: 'bg-green-500/20 text-green-400',
@@ -9,6 +13,28 @@ const statusColors = {
 };
 
 export default function AdminEvents() {
+  const dispatch = useDispatch();
+  const { events, isLoading } = useSelector((state) => state.admin);
+
+  useEffect(() => {
+    dispatch(fetchAllEvents());
+  }, [dispatch]);
+
+  const handleToggleActive = (eventId, currentStatus) => {
+    dispatch(updateEventInfo({ eventId, eventData: { isActive: !currentStatus } })).then(res => {
+      if(!res.error) toast.success("Status Updated");
+    });
+  };
+
+  const handleDeleteEvent = (id) => {
+    if (window.confirm("Delete this event forever?")) {
+      dispatch(deleteEvent(id)).then(res => {
+        if(!res.error) toast.success("Event Deleted");
+      });
+    }
+  };
+
+  if (isLoading) return <Loading />;
   return (
     <AdminLayout current="/admin/events">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
@@ -43,7 +69,7 @@ export default function AdminEvents() {
               </tr>
             </thead>
             <tbody>
-              {events.map((event, i) => (
+              {events?.map((event, i) => (
                 <tr key={event._id} className={`border-b border-white/5 last:border-b-0 hover:bg-white/[0.03] transition-colors ${i % 2 === 0 ? 'bg-white/[0.01]' : ''}`}>
                   <td className="p-4">
                     <div className="flex items-center gap-3">
@@ -54,17 +80,25 @@ export default function AdminEvents() {
                   <td className="p-4 hidden md:table-cell"><span className="text-sm text-[#00f5ff]">{event.eventArtistName}</span></td>
                   <td className="p-4 hidden lg:table-cell"><span className="text-sm text-white/50">{event.eventDate}</span></td>
                   <td className="p-4 hidden lg:table-cell"><span className="text-sm text-white/50">{event.eventLocation}</span></td>
-                  <td className="p-4"><span className="text-sm text-[#f72585] font-bold">₹{event.ticketPrice.toLocaleString()}</span></td>
-                  <td className="p-4"><span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${statusColors[event.status]}`}>{event.status}</span></td>
+                  <td className="p-4"><span className="text-sm text-[#f72585] font-bold">₹{event.ticketPrice?.toLocaleString()}</span></td>
+                  <td className="p-4"><span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${statusColors[event.status] || 'bg-white/10'}`}>{event.status}</span></td>
                   <td className="p-4">
-                    <div className={`w-10 h-5 rounded-full relative cursor-pointer transition-all ${event.isActive ? 'bg-[#f72585]' : 'bg-white/10'}`}>
+                    <div 
+                      onClick={() => handleToggleActive(event._id, event.isActive)}
+                      className={`w-10 h-5 rounded-full relative cursor-pointer transition-all ${event.isActive ? 'bg-[#f72585]' : 'bg-white/10'}`}
+                    >
                       <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${event.isActive ? 'left-5' : 'left-0.5'}`} />
                     </div>
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
                       <Link to={`/admin/events/edit/${event._id}`} className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center text-xs">✏️</Link>
-                      <button className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all flex items-center justify-center text-xs">🗑️</button>
+                      <button 
+                        onClick={() => handleDeleteEvent(event._id)}
+                        className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all flex items-center justify-center text-xs"
+                      >
+                        🗑️
+                      </button>
                     </div>
                   </td>
                 </tr>

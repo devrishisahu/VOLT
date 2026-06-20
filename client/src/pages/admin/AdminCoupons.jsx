@@ -1,8 +1,34 @@
-import { Link } from 'react-router-dom';
-import { coupons } from '../../data/mockData';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchAllCoupons, updateCoupon, deleteCoupon } from '../../features/admin/adminSlice';
 import AdminLayout from '../../components/AdminLayout';
+import Loading from '../../components/Loading';
+import { toast } from 'react-toastify';
+import { Link } from 'react-router-dom';
 
 export default function AdminCoupons() {
+  const dispatch = useDispatch();
+  const { coupons, isLoading } = useSelector((state) => state.admin);
+
+  useEffect(() => {
+    dispatch(fetchAllCoupons());
+  }, [dispatch]);
+
+  const handleDelete = (id) => {
+    if (window.confirm("Delete this coupon?")) {
+      dispatch(deleteCoupon(id)).then(res => {
+        if (!res.error) toast.success("Coupon Deleted");
+      });
+    }
+  };
+
+  const handleToggleStatus = (id, currentStatus) => {
+    dispatch(updateCoupon({ couponId: id, couponData: { isActive: !currentStatus } })).then(res => {
+      if (!res.error) toast.success("Status Updated");
+    });
+  };
+
+  if (isLoading) return <Loading />;
   return (
     <AdminLayout current="/admin/coupons">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
@@ -31,7 +57,10 @@ export default function AdminCoupons() {
                   <td className="p-4"><span className="text-sm text-[#f72585] font-bold">{coupon.couponDiscount}%</span></td>
                   <td className="p-4">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-5 rounded-full relative cursor-pointer transition-all ${coupon.isActive ? 'bg-[#f72585]' : 'bg-white/10'}`}>
+                      <div 
+                        onClick={() => handleToggleStatus(coupon._id, coupon.isActive)}
+                        className={`w-10 h-5 rounded-full relative cursor-pointer transition-all ${coupon.isActive ? 'bg-[#f72585]' : 'bg-white/10'}`}
+                      >
                         <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${coupon.isActive ? 'left-5' : 'left-0.5'}`} />
                       </div>
                       <span className={`text-xs font-semibold uppercase ${coupon.isActive ? 'text-green-400' : 'text-white/30'}`}>
@@ -42,7 +71,12 @@ export default function AdminCoupons() {
                   <td className="p-4">
                     <div className="flex items-center gap-2">
                       <button className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center text-xs">✏️</button>
-                      <button className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all flex items-center justify-center text-xs">🗑️</button>
+                      <button 
+                        onClick={() => handleDelete(coupon._id)}
+                        className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all flex items-center justify-center text-xs"
+                      >
+                        🗑️
+                      </button>
                     </div>
                   </td>
                 </tr>

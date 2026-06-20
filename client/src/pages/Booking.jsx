@@ -1,11 +1,72 @@
-import { useParams, Link } from 'react-router-dom';
-import { events, coupons } from '../data/mockData';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { getEvents } from '../features/event/eventSlice';
+import { bookTicket, verifyCoupon, reset } from '../features/order/orderSlice';
+import { toast } from 'react-toastify';
+import Loading from '../components/Loading';
 
 const steps = ['Select Seats', 'Apply Coupon', 'Confirm'];
 
 export default function Booking() {
   const { id } = useParams();
-  const event = events.find(e => e._id === id) || events[0];
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const { user } = useSelector((state) => state.auth);
+  const { events } = useSelector((state) => state.event);
+  const { isLoading, isSuccess, isError, message, appliedCoupon } = useSelector((state) => state.order);
+  const event = events.find(e => e._id === id);
+
+  const handleApplyCoupon = () => {
+    if (couponCode) {
+      dispatch(verifyCoupon(couponCode)).then(res => {
+        if (res.error) {
+          toast.error(res.payload);
+        } else {
+          toast.success(`Coupon Applied! ${res.payload.couponDiscount}% Off`);
+        }
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+    }
+  }, [user, navigate]);
+
+  const [numberOfSeats, setNumberOfSeats] = useState(1);
+  const [couponCode, setCouponCode] = useState('');
+
+  useEffect(() => {
+    if (events.length === 0) {
+      dispatch(getEvents());
+    }
+  }, [events, dispatch]);
+
+  useEffect(() => {
+    if (isError) {
+      toast.error(message);
+      dispatch(reset());
+    }
+    if (isSuccess) {
+      toast.success("Ticket Booked Successfully!");
+      dispatch(reset());
+      navigate('/profile');
+    }
+  }, [isError, isSuccess, message, navigate, dispatch]);
+
+  const handleBooking = () => {
+    dispatch(bookTicket({ 
+      eventId: id, 
+      bookingData: { numberOfSeats, couponCode } 
+    }));
+  };
+
+  if (!user) return null;
+  if (!event) return <Loading />;
+
   const currentStep = 2; // hardcoded to show confirm step
 
   return (
@@ -52,9 +113,19 @@ export default function Booking() {
           <div className="mt-6 flex items-center justify-between">
             <span className="text-sm text-white/40">Number of Seats</span>
             <div className="flex items-center gap-3">
-              <button className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white text-sm hover:bg-white/10 transition-all">−</button>
-              <span className="text-xl font-bold text-white w-8 text-center">2</span>
-              <button className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white text-sm hover:bg-white/10 transition-all">+</button>
+              <button 
+                onClick={() => setNumberOfSeats(Math.max(1, numberOfSeats - 1))}
+                className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white text-sm hover:bg-white/10 transition-all"
+              >
+                −
+              </button>
+              <span className="text-xl font-bold text-white w-8 text-center">{numberOfSeats}</span>
+              <button 
+                onClick={() => setNumberOfSeats(Math.min(5, numberOfSeats + 1))}
+                className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white text-sm hover:bg-white/10 transition-all"
+              >
+                +
+              </button>
             </div>
           </div>
         </div>
@@ -65,17 +136,19 @@ export default function Booking() {
           <div className="flex gap-2">
             <input
               type="text"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
               placeholder="Enter coupon code"
-              defaultValue="VOLT20"
               className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-[#f72585]/50"
-
             />
-            <button className="px-6 py-3 bg-[#f72585] text-white text-sm font-bold uppercase tracking-wider rounded-lg hover:shadow-[0_0_20px_rgba(247,37,133,0.4)] transition-all">Apply</button>
+            <button 
+              onClick={handleApplyCoupon}
+              className="px-4 py-3 bg-[#f72585]/10 text-[#f72585] text-sm font-bold rounded-lg border border-[#f72585]/20 hover:bg-[#f72585]/20 transition-all"
+            >
+              Apply
+            </button>
           </div>
-          <div className="mt-3 flex items-center gap-2 text-green-400 text-sm">
-            <span>✓</span>
-            <span>Coupon VOLT20 applied — 20% off!</span>
-          </div>
+          <p className="text-[10px] text-white/20 mt-3 italic">Coupons are applied automatically if valid during confirmation.</p>
         </div>
 
         {/* Step 3: Order Summary */}
@@ -88,7 +161,7 @@ export default function Booking() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-white/50">Seats</span>
-              <span className="text-white">2</span>
+              <span className="text-white">{numberOfSeats}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-white/50">Price per seat</span>
@@ -96,22 +169,35 @@ export default function Booking() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-white/50">Subtotal</span>
-              <span className="text-white">₹{(event.ticketPrice * 2).toLocaleString()}</span>
+              <span className={`text-white ${appliedCoupon ? 'line-through opacity-30' : ''}`}>
+                ₹{(event.ticketPrice * numberOfSeats).toLocaleString()}
+              </span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-white/50">Discount (20%)</span>
-              <span className="text-green-400">-₹{Math.round(event.ticketPrice * 2 * 0.2).toLocaleString()}</span>
-            </div>
+            {appliedCoupon && (
+              <div className="flex justify-between text-sm text-green-400">
+                <span>Discount ({appliedCoupon.couponDiscount}%)</span>
+                <span>-₹{((event.ticketPrice * numberOfSeats * appliedCoupon.couponDiscount) / 100).toLocaleString()}</span>
+              </div>
+            )}
             <div className="border-t border-white/10 pt-3 flex justify-between text-lg font-bold">
               <span className="text-white">Total</span>
-              <span className="text-[#f72585]">₹{Math.round(event.ticketPrice * 2 * 0.8).toLocaleString()}</span>
+              <span className="text-[#f72585]">
+                ₹{(
+                  (event.ticketPrice * numberOfSeats) - 
+                  (appliedCoupon ? (event.ticketPrice * numberOfSeats * appliedCoupon.couponDiscount) / 100 : 0)
+                ).toLocaleString()}
+              </span>
             </div>
           </div>
 
-          <Link to="/ticket/o1" className="mt-6 w-full py-4 bg-[#f72585] text-white font-bold uppercase tracking-wider rounded-xl hover:shadow-[0_0_30px_rgba(247,37,133,0.5)] transition-all duration-300 animate-glow-pulse text-lg block text-center">
-            Confirm Booking
-          </Link>
-          <p className="text-[10px] text-white/20 text-center mt-3">By confirming, you agree to VOLT's terms of service</p>
+          <button 
+            onClick={handleBooking}
+            disabled={isLoading}
+            className="mt-6 w-full py-4 bg-[#f72585] text-white font-bold uppercase tracking-wider rounded-xl hover:shadow-[0_0_30px_rgba(247,37,133,0.5)] transition-all duration-300 animate-glow-pulse text-lg block text-center disabled:opacity-50"
+          >
+            {isLoading ? 'Processing...' : 'Confirm Booking'}
+          </button>
+          <p className="text-[10px] text-white/20 text-center mt-3 uppercase tracking-widest italic">Credits will be deducted from your wallet</p>
         </div>
 
         <Link to="/events" className="block text-center text-sm text-white/30 hover:text-[#f72585] transition-colors mt-8">← Back to Events</Link>

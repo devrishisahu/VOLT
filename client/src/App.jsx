@@ -21,8 +21,11 @@ import AdminCreateEvent from './pages/admin/AdminCreateEvent';
 import AdminEditEvent from './pages/admin/AdminEditEvent';
 import AdminCreateCoupon from './pages/admin/AdminCreateCoupon';
 import AdminEditUser from './pages/admin/AdminEditUser';
+import AdminCredits from './pages/admin/AdminCredits';
 import VoltBot from './pages/VoltBot';
 import { ToastContainer } from 'react-toastify';
+import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 
 export default function App() {
   const location = useLocation();
@@ -45,25 +48,32 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/events" element={<Events />} />
           <Route path="/events/:id" element={<EventDetail />} />
-          <Route path="/booking/:id" element={<Booking />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/wallet" element={<Wallet />} />
-          <Route path="/ticket/:orderId" element={<TicketDetail />} />
-          <Route path="/submit-event" element={<SubmitEvent />} />
           <Route path="/voltbot" element={<VoltBot />} />
 
+          {/* Protected routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/booking/:id" element={<Booking />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/wallet" element={<Wallet />} />
+            <Route path="/submit-event" element={<SubmitEvent />} />
+            <Route path="/ticket/:orderId" element={<TicketDetail />} />
+          </Route>
+
           {/* Admin routes (use their own AdminLayout) */}
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/users" element={<AdminUsers />} />
-          <Route path="/admin/users/edit/:id" element={<AdminEditUser />} />
-          <Route path="/admin/events" element={<AdminEvents />} />
-          <Route path="/admin/events/create" element={<AdminCreateEvent />} />
-          <Route path="/admin/events/edit/:id" element={<AdminEditEvent />} />
-          <Route path="/admin/orders" element={<AdminOrders />} />
-          <Route path="/admin/coupons" element={<AdminCoupons />} />
-          <Route path="/admin/coupons/create" element={<AdminCreateCoupon />} />
+          <Route element={<AdminRoute />}>
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/users/edit/:id" element={<AdminEditUser />} />
+            <Route path="/admin/events" element={<AdminEvents />} />
+            <Route path="/admin/events/create" element={<AdminCreateEvent />} />
+            <Route path="/admin/events/edit/:id" element={<AdminEditEvent />} />
+            <Route path="/admin/orders" element={<AdminOrders />} />
+            <Route path="/admin/coupons" element={<AdminCoupons />} />
+            <Route path="/admin/coupons/create" element={<AdminCreateCoupon />} />
+            <Route path="/admin/credits" element={<AdminCredits />} />
+          </Route>
 
           {/* 404 */}
           <Route path="*" element={<NotFound />} />

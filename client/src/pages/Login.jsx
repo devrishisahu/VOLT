@@ -21,10 +21,10 @@ export default function Login() {
   const { email, password } = formData;
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
+    setFormData((prevState) => ({
+      ...prevState,
       [e.target.name]: e.target.value,
-    });
+    }));
   };
 
   const handleSubmit = (e) => {
@@ -36,7 +36,7 @@ export default function Login() {
 
   useEffect(() => {
     if (user) {
-      navigate("/Profile");
+      navigate(user.isAdmin ? "/admin" : "/profile");
     }
 
     if (isError && message) {
@@ -106,31 +106,37 @@ export default function Login() {
             <p className="text-white/40 mt-2">Sign in to your account</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
             <div>
-              <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">
+              <label htmlFor="login-email" className="block text-xs text-white/40 uppercase tracking-wider mb-2">
                 Email
               </label>
               <input
-              name="email"
-              value={email}
-              onChange={handleChange}
+                id="login-email"
+                name="email"
+                value={email}
+                onChange={handleChange}
                 type="email"
                 placeholder="your@email.com"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/30 outline-none focus:border-[#f72585]/50 transition-colors"
+                autoComplete="off"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/30 focus:border-[#f72585]/50 transition-colors"
+                style={{ outline: 'none' }}
               />
             </div>
             <div>
-              <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">
+              <label htmlFor="login-password" className="block text-xs text-white/40 uppercase tracking-wider mb-2">
                 Password
               </label>
               <input
-               name="password"
-              value={password}
-              onChange={handleChange}
+                id="login-password"
+                name="password"
+                value={password}
+                onChange={handleChange}
                 type="password"
-                placeholder="••••••••"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/30 outline-none focus:border-[#f72585]/50 transition-colors"
+                placeholder="Enter your password"
+                autoComplete="new-password"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/30 focus:border-[#f72585]/50 transition-colors"
+                style={{ outline: 'none' }}
               />
             </div>
             <button type="submit" className="w-full py-4 bg-[#f72585] text-white font-bold uppercase tracking-wider rounded-xl hover:shadow-[0_0_30px_rgba(247,37,133,0.5)] transition-all duration-300 text-lg">

@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
-import { events } from '../data/mockData';
 import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { getEvents } from '../features/event/eventSlice';
 import Footer from '../components/Footer';
+import Loading from '../components/Loading';
 
 const genres = ['ALL GENRES', 'ROCK', 'POP', 'EDM', 'TECHNO', 'HIP HOP'];
 
@@ -13,12 +15,22 @@ const liveShows = [
 
 export default function Home() {
   const [scrollY, setScrollY] = useState(0);
+  const dispatch = useDispatch();
+  const { events, isLoading } = useSelector((state) => state.event);
+
+  useEffect(() => {
+    dispatch(getEvents());
+  }, [dispatch]);
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  if (isLoading) {
+    return <Loading />;
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
@@ -103,72 +115,46 @@ export default function Home() {
             <Link to="/events" className="text-[#f72585] text-sm font-semibold hover:underline uppercase tracking-wider hidden md:block">View All Lineup →</Link>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Large featured card */}
-            <div className="lg:col-span-2 group relative rounded-2xl overflow-hidden h-[400px] md:h-[500px] hover:scale-[1.02] transition-transform duration-500 cursor-pointer">
-              <img src={events[0].eventImage} alt={events[0].title} className="w-full h-full object-cover brightness-50 group-hover:brightness-[0.4] transition-all duration-500 group-hover:scale-105" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-              <div className="absolute top-6 left-6 flex gap-2">
-                <span className="px-3 py-1 bg-[#f72585] text-white text-[10px] font-bold uppercase tracking-widest rounded-full">Headline</span>
-                <span className="px-3 py-1 bg-white/10 backdrop-blur text-white text-[10px] font-bold uppercase tracking-widest rounded-full">Global Tour 2025</span>
+          {events.length > 0 ? (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Large featured card */}
+              <div className="lg:col-span-2 group relative rounded-2xl overflow-hidden h-[400px] md:h-[500px] hover:scale-[1.02] transition-transform duration-500 cursor-pointer">
+                <img src={events[0].eventImage} alt={events[0].title} className="w-full h-full object-cover brightness-50 group-hover:brightness-[0.4] transition-all duration-500 group-hover:scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                <div className="absolute top-6 left-6 flex gap-2">
+                  <span className="px-3 py-1 bg-[#f72585] text-white text-[10px] font-bold uppercase tracking-widest rounded-full">Headline</span>
+                  <span className="px-3 py-1 bg-white/10 backdrop-blur text-white text-[10px] font-bold uppercase tracking-widest rounded-full">Global Tour 2025</span>
+                </div>
+                <div className="absolute bottom-6 left-6 right-6">
+                  <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-white">{events[0].title}</h3>
+                  <p className="text-white/50 mt-2 line-clamp-2">{events[0].description}</p>
+                  <Link to={`/events/${events[0]._id}`} className="inline-block mt-4 px-6 py-3 bg-[#f72585] text-white text-sm font-bold uppercase tracking-wider rounded-lg hover:shadow-[0_0_30px_rgba(247,37,133,0.5)] transition-all">
+                    Get Tickets
+                  </Link>
+                </div>
               </div>
-              <div className="absolute bottom-6 left-6 right-6">
-                <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-white">{events[0].title}</h3>
-                <p className="text-white/50 mt-2 line-clamp-2">{events[0].description}</p>
-                <Link to={`/events/${events[0]._id}`} className="inline-block mt-4 px-6 py-3 bg-[#f72585] text-white text-sm font-bold uppercase tracking-wider rounded-lg hover:shadow-[0_0_30px_rgba(247,37,133,0.5)] transition-all">
-                  Get Tickets
-                </Link>
+
+              {/* Two smaller cards */}
+              <div className="flex flex-col gap-6">
+                {events.slice(1, 3).map((event) => (
+                  <Link key={event._id} to={`/events/${event._id}`} className="group relative rounded-2xl overflow-hidden h-[190px] md:h-[237px] hover:scale-[1.02] transition-transform duration-500">
+                    <img src={event.eventImage} alt={event.title} className="w-full h-full object-cover brightness-50 group-hover:brightness-[0.35] transition-all duration-500 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <span className="text-[10px] uppercase tracking-widest text-[#00f5ff] font-semibold">{event.eventArtistName}</span>
+                      <h3 className="text-lg font-black uppercase tracking-tight text-white mt-1">{event.title}</h3>
+                    </div>
+                  </Link>
+                ))}
               </div>
             </div>
-
-            {/* Two smaller cards */}
-            <div className="flex flex-col gap-6">
-              {events.slice(1, 3).map((event) => (
-                <Link key={event._id} to={`/events/${event._id}`} className="group relative rounded-2xl overflow-hidden h-[190px] md:h-[237px] hover:scale-[1.02] transition-transform duration-500">
-                  <img src={event.eventImage} alt={event.title} className="w-full h-full object-cover brightness-50 group-hover:brightness-[0.35] transition-all duration-500 group-hover:scale-105" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <span className="text-[10px] uppercase tracking-widest text-[#00f5ff] font-semibold">{event.eventArtistName}</span>
-                    <h3 className="text-lg font-black uppercase tracking-tight text-white mt-1">{event.title}</h3>
-                  </div>
-                </Link>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-64 bg-white/5 rounded-2xl animate-pulse" />
               ))}
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Live Broadcasts */}
-      <section className="px-6 md:px-16 mt-24">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-3 mb-10">
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-            </span>
-            <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-white">Live Broadcasts</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {liveShows.map((show) => (
-              <div key={show.id} className="group rounded-2xl overflow-hidden bg-[#141414] border border-white/5 hover:border-[#f72585]/30 hover:shadow-[0_0_30px_rgba(247,37,133,0.15)] transition-all duration-300 cursor-pointer">
-                <div className="relative h-48 overflow-hidden">
-                  <img src={show.image} alt={show.title} className="w-full h-full object-cover brightness-75 group-hover:scale-105 transition-transform duration-500" />
-                  <div className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 bg-red-500/90 rounded text-[10px] font-bold uppercase text-white">
-                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                    Live
-                  </div>
-                  <div className="absolute bottom-3 left-3 flex items-center gap-1 text-xs text-white/80">
-                    <span>👁</span> {show.viewers} watching
-                  </div>
-                </div>
-                <div className="p-4">
-                  <h3 className="font-bold text-white uppercase tracking-tight">{show.title}</h3>
-                  <p className="text-sm text-white/40 mt-1">{show.subtitle}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          )}
         </div>
       </section>
 

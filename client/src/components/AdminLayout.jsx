@@ -7,6 +7,7 @@ const adminNav = [
   { path: '/admin/events', label: 'Events', icon: '🎪' },
   { path: '/admin/orders', label: 'Orders', icon: '📋' },
   { path: '/admin/coupons', label: 'Coupons', icon: '🏷️' },
+  { path: '/admin/credits', label: 'Credit Requests', icon: '💰' },
 ];
 
 export default function AdminLayout({ children, current }) {

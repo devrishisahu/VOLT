@@ -1,16 +1,34 @@
 import { useParams, Link } from 'react-router-dom';
-import { events, comments } from '../data/mockData';
 import Footer from '../components/Footer';
+import { useDispatch, useSelector } from 'react-redux';
+import { useEffect } from 'react';
+import { getEvents } from '../features/event/eventSlice';
+import Loading from '../components/Loading';
 
 export default function EventDetail() {
   const { id } = useParams();
-  const event = events.find(e => e._id === id) || events[0];
+  const dispatch = useDispatch();
+
+  const { events, isLoading } = useSelector((state) => state.event);
+  const event = events.find(e => e._id === id);
+
+  useEffect(() => {
+    if (events.length === 0) {
+      dispatch(getEvents());
+    }
+  }, [events, dispatch]);
 
   const statusColors = {
     upcoming: 'bg-green-500/20 text-green-400',
     ongoing: 'bg-[#f72585]/20 text-[#f72585]',
     expired: 'bg-white/10 text-white/40',
   };
+
+  if (isLoading || !event) {
+    return <Loading />;
+  }
+
+  const comments = [];
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
@@ -102,44 +120,23 @@ export default function EventDetail() {
           <div className="lg:col-span-1">
             <div className="sticky top-8 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 space-y-6">
               <div className="text-center">
-                <p className="text-xs text-white/40 uppercase tracking-widest">Price per ticket</p>
+                <p className="text-xs text-white/40 uppercase tracking-widest">Starting from</p>
                 <p className="text-4xl font-black text-[#f72585] mt-2">₹{event.ticketPrice.toLocaleString()}</p>
+                <p className="text-[10px] text-white/30 mt-1 uppercase tracking-widest">per ticket</p>
               </div>
 
-              <div className="border-t border-white/10 pt-6">
-                <label className="text-xs text-white/40 uppercase tracking-wider block mb-2">Number of Seats</label>
-                <div className="flex items-center justify-center gap-4">
-                  <button className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all text-lg">−</button>
-                  <span className="text-2xl font-bold text-white">2</span>
-                  <button className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all text-lg">+</button>
+              <div className="border-t border-white/10 pt-6 space-y-4">
+                <div className="flex items-center gap-3 text-sm text-white/60">
+                  <span>🎟️</span>
+                  <span>Instant Confirmation</span>
                 </div>
-              </div>
-
-              <div className="border-t border-white/10 pt-6">
-                <label className="text-xs text-white/40 uppercase tracking-wider block mb-2">Coupon Code</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Enter code"
-                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none focus:border-[#f72585]/50"
-
-                  />
-                  <button className="px-4 py-2 bg-white/10 text-white text-xs font-bold rounded-lg hover:bg-white/15 transition-all uppercase tracking-wider">Apply</button>
+                <div className="flex items-center gap-3 text-sm text-white/60">
+                  <span>🛡️</span>
+                  <span>Secure Credit Payment</span>
                 </div>
-              </div>
-
-              <div className="border-t border-white/10 pt-6 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-white/40">Subtotal</span>
-                  <span className="text-white">₹{(event.ticketPrice * 2).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-white/40">Discount</span>
-                  <span className="text-green-400">-₹0</span>
-                </div>
-                <div className="flex justify-between text-lg font-bold pt-2 border-t border-white/10">
-                  <span className="text-white">Total</span>
-                  <span className="text-[#f72585]">₹{(event.ticketPrice * 2).toLocaleString()}</span>
+                <div className="flex items-center gap-3 text-sm text-white/60">
+                  <span>⚡</span>
+                  <span>High Energy Experience</span>
                 </div>
               </div>
 

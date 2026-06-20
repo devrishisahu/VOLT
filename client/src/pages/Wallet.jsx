@@ -1,5 +1,8 @@
-import { currentUser } from '../data/mockData';
+import { useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { requestCredits } from '../features/credits/creditSlice';
 import Footer from '../components/Footer';
+import { toast } from 'react-toastify';
 
 const transactions = [
   { id: 1, type: 'Credit Added', amount: '+200', date: '2025-05-01', desc: 'Welcome bonus' },
@@ -10,6 +13,27 @@ const transactions = [
 ];
 
 export default function Wallet() {
+  const [showRequest, setShowRequest] = useState(false);
+  const [amount, setAmount] = useState('');
+  
+  const dispatch = useDispatch();
+  const { user } = useSelector(state => state.auth);
+  const { isLoading } = useSelector(state => state.credits);
+
+  const handleRequest = (e) => {
+    e.preventDefault();
+    if (!amount || amount <= 0) return toast.error("Please enter a valid amount");
+    
+    dispatch(requestCredits(amount)).then((res) => {
+      if (!res.error) {
+        toast.success("Request sent to Admin!");
+        setShowRequest(false);
+        setAmount('');
+      }
+    });
+  };
+
+  if (!user) return null;
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       <div className="px-6 md:px-16 pt-10 md:pt-16 pb-20">
@@ -22,12 +46,50 @@ export default function Wallet() {
 
             <div className="relative z-10">
               <p className="text-xs uppercase tracking-[0.3em] text-white/40 font-mono">Volt Credits</p>
-              <p className="text-6xl md:text-8xl font-black text-[#f72585] mt-4 animate-fade-in-up animation-delay-200">{currentUser.credits}</p>
+              <p className="text-6xl md:text-8xl font-black text-[#f72585] mt-4 animate-fade-in-up animation-delay-200">{user.credits}</p>
               <p className="text-white/30 mt-2">Available balance</p>
-              <button className="mt-6 px-8 py-3 bg-[#f72585] text-white font-bold uppercase tracking-wider rounded-xl hover:shadow-[0_0_30px_rgba(247,37,133,0.5)] transition-all duration-300">
+              <button 
+                onClick={() => setShowRequest(true)}
+                className="mt-6 px-8 py-3 bg-[#f72585] text-white font-bold uppercase tracking-wider rounded-xl hover:shadow-[0_0_30px_rgba(247,37,133,0.5)] transition-all duration-300"
+              >
                 Add Credits
               </button>
             </div>
+
+            {/* Request Modal */}
+            {showRequest && (
+              <div className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-[#0a0a0a]/90 backdrop-blur-md animate-fade-in">
+                <div className="w-full max-w-sm">
+                  <h3 className="text-xl font-black text-white uppercase tracking-tight mb-4">Request Credits</h3>
+                  <form onSubmit={handleRequest} className="space-y-4">
+                    <input 
+                      type="number"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      placeholder="Enter amount (e.g. 500)"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-[#f72585]/50"
+                      required
+                    />
+                    <div className="flex gap-2">
+                      <button 
+                        type="submit" 
+                        disabled={isLoading}
+                        className="flex-1 py-3 bg-[#f72585] text-white font-bold rounded-xl text-sm uppercase tracking-widest disabled:opacity-50"
+                      >
+                        {isLoading ? 'Sending...' : 'Send Request'}
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => setShowRequest(false)}
+                        className="flex-1 py-3 bg-white/5 text-white/40 font-bold rounded-xl text-sm uppercase tracking-widest"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* How Credits Work */}

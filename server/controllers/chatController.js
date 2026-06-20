@@ -2,9 +2,9 @@ import { GoogleGenAI } from "@google/genai";
 import Event from "../models/eventModel.js";
 import Order from "../models/orderModel.js";
 import Comment from "../models/commentModel.js";
-import Coupon from "../models/CouponModel.js";
+import Coupon from "../models/couponModel.js";
 
-const ai = new GoogleGenAI({});
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 let SYSTEM_PROMPT = `You are MoodGo Assistant, a friendly and helpful support assistant for the MoodGo platform.
 
@@ -63,7 +63,7 @@ const giveAnswer = async (req, res) => {
 
     const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `Here is all data ${events} , ${orders} , ${ratings} , ${coupons}  based on that ${SYSTEM_PROMPT} answer ${text}`
+        contents: `Here is all data: Events: ${JSON.stringify(events)}, Orders: ${JSON.stringify(orders)}, Ratings: ${JSON.stringify(ratings)}, Coupons: ${JSON.stringify(coupons)}. Based on that, ${SYSTEM_PROMPT}. Answer: ${text}`
     });
 
 
