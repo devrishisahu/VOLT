@@ -1,151 +1,115 @@
-# 🎟️ MoodGO – AI Powered Ticket Booking Platform
+# ⚡ VOLT – Feel The Voltage (AI-Powered Ticketing)
 
-MoodGO is an AI-powered ticket booking platform built using the MERN Stack.  
-It allows users to explore events, book tickets, create their own events, and interact with an intelligent AI chatbot for real-time event assistance.
+VOLT is a cutting-edge, MERN-stack live event and ticketing platform.
+It empowers users to seamlessly discover concerts, book tickets, manage event listings, and converse with **VoltBot**, an embedded AI assistant built directly into the app using Google Gemini!
 
 ---
 
 ## 🚀 Features
 
-### 🎫 Event Booking
-- Browse upcoming events
-- View event details (price, date, description, organizer)
-- Book tickets securely
-- Real-time availability updates
+### 🎫 Event Booking & Management
+- Browse upcoming live events with rich cinematic video trailers.
+- View real-time seat availability and dynamically calculated ticket prices.
+- Book tickets securely and apply promotional coupons.
+- Fair cancellation policies (100% refund within 24 hours, 90% up to 7 days).
 
-### 🧑‍💼 Authentication
-- User registration and login
-- JWT-based authentication
-- Protected routes
+### 🧑‍💼 User Authentication
+- Secure JWT-based authentication.
+- Passwords fully encrypted with bcrypt.
+- Private wallet system tracking user credits and refunds.
 
-### 🛠️ Event Creation
-- Create and publish events
-- Edit and delete events
-- Add pricing, description, and event details
+### 🤖 VoltBot (Google Gemini AI)
+- Fully integrated conversational AI companion powered by **@google/genai**.
+- Context-aware: VoltBot secretly analyzes the live database to recommend active concerts!
+- Rate-limited and aggressively guarded to prevent off-topic prompts.
 
-### 🤖 AI Chatbot Assistant
-- AI-powered conversational chatbot
-- Ask about event pricing and availability
-- Get event details instantly
-- Personalized recommendations
-
-### ⚡ State Management
-- Powered by TanStack Query
-  - Server state management
-  - API caching
-  - Background refetching
-  - Optimistic UI updates
+### ⚡ State Management & UI
+- Built with **React** and powered by **Vite** for blazing fast HMR.
+- Global state heavily managed by **Redux Toolkit**.
+- Beautiful, fully responsive frontend styled via **Tailwind CSS**.
 
 ---
 
 ## 🏗️ Tech Stack
 
 ### Frontend
-- React.js
-- TanStack Query
+- React 19 + Vite
+- Redux Toolkit (State Management)
 - Tailwind CSS
 - Axios
 
 ### Backend
-- Node.js
-- Express.js
-
-### Database
-- MongoDB
-- Mongoose
+- Node.js (Express 5.x)
+- MongoDB & Mongoose
+- Cloudinary (Image Hosting)
 
 ### AI Integration
-- AI API integration for chatbot functionality
-- Natural language event query processing
+- Google Gemini SDK (`@google/genai`)
 
 ---
 
 ## 📁 Project Structure
 
-MoodGO/
+```text
+VOLT/
 │
-├── client/        # React Frontend
+├── client/        # React Frontend (Vite, Redux, Tailwind)
 ├── server/        # Express Backend
-├── models/        # MongoDB Schemas
-├── routes/        # API Routes
-├── controllers/   # Business Logic
-└── config/        # Database & API Configurations
+│   ├── models/    # MongoDB Schemas (User, Event, Order, Coupon)
+│   ├── routes/    # API Routes
+│   └── controllers/ # Business Logic (Rate limiting, ticketing math)
+└── package.json   # Monolith Deployment Scripts
+```
 
 ---
 
 ## 🔑 Environment Variables
 
-Create a `.env` file inside the server folder:
+Create a `.env` file inside the `server` folder and include the following:
 
+```env
 PORT=5000  
 MONGO_URI=your_mongodb_connection_string  
 JWT_SECRET=your_secret_key  
-AI_API_KEY=your_ai_api_key  
+GEMINI_API_KEY=your_google_gemini_api_key
+CLOUDINARY_CLOUD_NAME=your_cloudinary_name
+CLOUDINARY_API_KEY=your_cloudinary_key
+CLOUDINARY_API_SECRET=your_cloudinary_secret
+```
 
 ---
 
-## ⚙️ Installation & Setup
+## ⚙️ Installation & Deployment
 
-### 1. Clone the Repository
+This project is configured as a monolithic service, making it incredibly easy to deploy on platforms like Render.
 
-git clone https://github.com/your-username/MoodGO.git  
-cd MoodGO  
-
-### 2. Install Dependencies
+### 1. Local Development
 
 Backend:
+```bash
 cd server  
-npm install  
+npm run dev
+```
 
 Frontend:
+```bash
 cd client  
-npm install  
+npm run dev
+```
 
-### 3. Run the Application
+### 2. Production Deployment (Monolith)
 
-Start Backend:
-npm run dev  
+In production, the Express backend serves the static React files automatically. Ensure `NODE_ENV=production` is set in your environment.
 
-Start Frontend:
-npm start  
-
----
-
-## 🧠 How AI Works in MoodGO
-
-1. User sends a query through the chatbot.
-2. Backend forwards the request to the AI API.
-3. AI processes the event-related query.
-4. The response is returned in conversational format.
-5. Data is integrated with the event database for contextual replies.
-
----
-
-## 📌 Future Improvements
-
-- Online Payment Integration
-- Admin Dashboard
-- Location-based Event Filtering
-- Booking History & Invoice System
-- Personalized AI Recommendations
-- Mobile App Version
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome.  
-Feel free to fork the repository and submit a pull request.
-
----
-
-## 📜 License
-
-This project is licensed under the MIT License.
+From the root directory, run:
+```bash
+npm run build
+npm start
+```
 
 ---
 
 ## 👨‍💻 Author
 
-Rishi Sahu  
+**Rishi Sahu**  
 Full Stack Developer | MERN Stack

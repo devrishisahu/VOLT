@@ -41,7 +41,7 @@ if (process.env.NODE_ENV === "production") {
 } else {
   app.get("/", (req, res) => {
     res.json({
-      message: "WELCOME TO MOODGO API",
+      message: "WELCOME TO VOLT API",
     });
   });
 }
