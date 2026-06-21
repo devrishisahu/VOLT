@@ -62,12 +62,19 @@ const deleteEvent = async (eventId, token) => {
     return response.data;
 }
 
+const deleteOrder = async (orderId, token) => {
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+    const response = await axios.delete(API_URL + 'orders/' + orderId, config);
+    return response.data;
+}
+
 const adminService = {
     getAllUsers,
     updateUser,
     getAllEvents,
     updateEvent,
     getAllOrders,
+    deleteOrder,
     getAllCoupons,
     createCoupon,
     updateCoupon,

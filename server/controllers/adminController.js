@@ -173,7 +173,16 @@ const deleteEvent = async (req, res) => {
   res.status(200).json({ id: req.params.eid });
 };
 
-const adminController = { getAllUsers , updateUser , getAllEvents , getAllRatings, getAllOrders, getAllCoupons ,updateEvent , createCoupon , updateCoupon, deleteCoupon, deleteEvent};
+const deleteOrder = async (req, res) => {
+  const order = await Order.findByIdAndDelete(req.params.oid);
+  if (!order) {
+    res.status(404);
+    throw new Error("Order Not Found");
+  }
+  res.status(200).json({ id: req.params.oid });
+};
+
+const adminController = { getAllUsers , updateUser , getAllEvents , getAllRatings, getAllOrders, deleteOrder, getAllCoupons ,updateEvent , createCoupon , updateCoupon, deleteCoupon, deleteEvent};
 
 export default adminController
 

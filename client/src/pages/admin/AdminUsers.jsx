@@ -1,12 +1,34 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAllUsers, updateUserInfo } from '../../features/admin/adminSlice';
 import AdminLayout from '../../components/AdminLayout';
 import Loading from '../../components/Loading';
+import Modal from '../../components/Modal';
+import { Link } from 'react-router-dom';
 
 export default function AdminUsers() {
   const dispatch = useDispatch();
   const { users, isLoading } = useSelector((state) => state.admin);
+  const [modalState, setModalState] = useState({ isOpen: false, userId: null });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const filteredUsers = users?.filter(user => 
+    user.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    user.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  ).sort((a, b) => {
+    if (a.isAdmin && !b.isAdmin) return -1;
+    if (!a.isAdmin && b.isAdmin) return 1;
+    return (b.credits || 0) - (a.credits || 0);
+  });
+
+  const totalPages = Math.ceil((filteredUsers?.length || 0) / itemsPerPage);
+  const paginatedUsers = filteredUsers?.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   useEffect(() => {
     dispatch(fetchAllUsers());
@@ -16,11 +38,13 @@ export default function AdminUsers() {
     dispatch(updateUserInfo({ userId, userData: { isActive: !currentStatus } }));
   };
 
-  const handleAddCredits = (userId) => {
-    const credits = prompt("Enter credits to add:");
+  const triggerAddCredits = (userId) => setModalState({ isOpen: true, userId: userId });
+
+  const confirmAddCredits = (credits) => {
     if (credits && !isNaN(credits)) {
-      dispatch(updateUserInfo({ userId, userData: { credits: parseInt(credits) } }));
+      dispatch(updateUserInfo({ userId: modalState.userId, userData: { credits: parseInt(credits) } }));
     }
+    setModalState({ isOpen: false, userId: null });
   };
 
   if (isLoading) return <Loading />;
@@ -33,7 +57,13 @@ export default function AdminUsers() {
         </div>
         <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
           <span className="text-white/30 text-sm">🔍</span>
-          <input type="text" placeholder="Search users..." className="bg-transparent text-sm text-white placeholder:text-white/30 outline-none w-40" />
+          <input 
+            type="text" 
+            placeholder="Search users..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="bg-transparent text-sm text-white placeholder:text-white/30 outline-none w-40" 
+          />
         </div>
       </div>
 
@@ -52,7 +82,7 @@ export default function AdminUsers() {
               </tr>
             </thead>
             <tbody>
-              {users?.map((user, i) => (
+              {paginatedUsers?.map((user, i) => (
                 <tr key={user._id} className={`border-b border-white/5 last:border-b-0 hover:bg-white/[0.03] transition-colors ${i % 2 === 0 ? 'bg-white/[0.01]' : ''}`}>
                   <td className="p-4">
                     <div className="flex items-center gap-3">
@@ -66,9 +96,9 @@ export default function AdminUsers() {
                   <td className="p-4 hidden md:table-cell"><span className="text-sm text-white/50">{user.phone}</span></td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-[#f72585] font-bold">{user.credits}</span>
+                      <span className="text-sm text-[#f72585] font-bold">{Number(user.credits).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                       <button 
-                        onClick={() => handleAddCredits(user._id)}
+                        onClick={() => triggerAddCredits(user._id)}
                         className="w-5 h-5 rounded bg-[#f72585]/10 text-[#f72585] text-[10px] hover:bg-[#f72585]/20"
                       >
                         +
@@ -100,14 +130,40 @@ export default function AdminUsers() {
           </table>
         </div>
         <div className="border-t border-white/10 px-6 py-4 flex justify-between items-center">
-          <span className="text-xs text-white/30">Showing 1-{users?.length || 0} of {users?.length || 0}</span>
+          <span className="text-xs text-white/30">
+            Showing {filteredUsers?.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}-
+            {Math.min(currentPage * itemsPerPage, filteredUsers?.length || 0)} of {filteredUsers?.length || 0}
+          </span>
           <div className="flex gap-2">
-            <button className="px-3 py-1.5 bg-white/5 border border-white/10 rounded text-xs text-white/40">Prev</button>
-            <button className="px-3 py-1.5 bg-[#f72585] rounded text-xs text-white font-bold">1</button>
-            <button className="px-3 py-1.5 bg-white/5 border border-white/10 rounded text-xs text-white/40">Next</button>
+            <button 
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 bg-white/5 border border-white/10 rounded text-xs text-white/40 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-all"
+            >
+              Prev
+            </button>
+            <button className="px-3 py-1.5 bg-[#f72585] rounded text-xs text-white font-bold">
+              {currentPage}
+            </button>
+            <button 
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="px-3 py-1.5 bg-white/5 border border-white/10 rounded text-xs text-white/40 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-all"
+            >
+              Next
+            </button>
           </div>
         </div>
       </div>
+      <Modal 
+        isOpen={modalState.isOpen}
+        onClose={() => setModalState({ isOpen: false, userId: null })}
+        onConfirm={confirmAddCredits}
+        type="prompt"
+        title="Add Credits"
+        message="Enter the amount of credits you want to add to this user."
+        placeholder="e.g. 500"
+      />
     </AdminLayout>
   );
 }

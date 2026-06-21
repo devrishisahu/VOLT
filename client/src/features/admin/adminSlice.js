@@ -65,6 +65,15 @@ export const createNewCoupon = createAsyncThunk("ADMIN/CREATE_COUPON", async (co
     }
 })
 
+export const deleteOrder = createAsyncThunk("ADMIN/DELETE_ORDER", async (orderId, thunkAPI) => {
+    try {
+        const token = thunkAPI.getState().auth.user.token
+        return await adminService.deleteOrder(orderId, token)
+    } catch (error) {
+        return thunkAPI.rejectWithValue(error.response.data.message)
+    }
+})
+
 const initialState = {
     users: [],
     events: [],
@@ -145,6 +154,10 @@ const adminSlice = createSlice({
             .addCase(fetchAllOrders.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.orders = action.payload
+            })
+            .addCase(deleteOrder.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.orders = state.orders.filter(o => o._id !== action.payload.id)
             })
             // Coupons
             .addCase(fetchAllCoupons.pending, (state) => { state.isLoading = true })

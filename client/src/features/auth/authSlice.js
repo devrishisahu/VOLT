@@ -32,6 +32,20 @@ export const logoutUser = createAsyncThunk("AUTH/LOGOUT", async () => {
   localStorage.removeItem('user');
 });
 
+// Sync User
+export const syncUser = createAsyncThunk(
+  "AUTH/SYNC",
+  async (_, thunkAPI) => {
+    try {
+      const token = thunkAPI.getState().auth.user.token;
+      return await authService.syncUser(token);
+    } catch (error) {
+      let message = error.response.data.message;
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
 let userExist = JSON.parse(localStorage.getItem("user"));
 
 const initialState = {
@@ -88,6 +102,9 @@ const authSlice = createSlice({
         state.isError = false;
         state.user = null
       })
+      .addCase(syncUser.fulfilled, (state, action) => {
+        state.user = action.payload;
+      });
   },
 });
 

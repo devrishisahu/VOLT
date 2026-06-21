@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = '/api/orders/';
+const API_URL = '/api/order/';
 
 const bookTicket = async (eventId, bookingData, token) => {
     const config = {

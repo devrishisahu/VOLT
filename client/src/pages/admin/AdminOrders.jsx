@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchAllOrders } from '../../features/admin/adminSlice';
+import { fetchAllOrders, deleteOrder } from '../../features/admin/adminSlice';
 import AdminLayout from '../../components/AdminLayout';
 import Loading from '../../components/Loading';
+import Modal from '../../components/Modal';
+import { toast } from 'react-toastify';
 
 const statusColors = {
   confirmed: 'bg-green-500/20 text-green-400',
@@ -16,14 +18,24 @@ export default function AdminOrders() {
   const [activeTab, setActiveTab] = useState('All');
   const dispatch = useDispatch();
   const { orders, isLoading } = useSelector((state) => state.admin);
+  const [modalState, setModalState] = useState({ isOpen: false, idToDelete: null });
 
   useEffect(() => {
     dispatch(fetchAllOrders());
   }, [dispatch]);
 
+  const triggerDelete = (id) => setModalState({ isOpen: true, idToDelete: id });
+
+  const confirmDelete = () => {
+    dispatch(deleteOrder(modalState.idToDelete)).then(res => {
+      if (!res.error) toast.success("Order Deleted");
+    });
+    setModalState({ isOpen: false, idToDelete: null });
+  };
+
   const filteredOrders = activeTab === 'All' 
     ? orders 
-    : orders.filter(o => o.status.toLowerCase() === activeTab.toLowerCase());
+    : orders?.filter(o => o?.status?.toLowerCase() === activeTab.toLowerCase());
 
   if (isLoading) return <Loading />;
   return (
@@ -31,7 +43,7 @@ export default function AdminOrders() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
         <div>
           <h1 className="text-3xl font-black uppercase tracking-tight text-white animate-fade-in-up">Manage Orders</h1>
-          <p className="text-white/40 mt-1">{orders.length} orders found</p>
+          <p className="text-white/40 mt-1">{filteredOrders?.length || 0} orders found</p>
         </div>
         <button className="px-4 py-2 bg-white/5 border border-white/10 text-white text-sm font-bold rounded-lg hover:bg-white/10 transition-all flex items-center gap-2">
           📥 Export
@@ -62,26 +74,42 @@ export default function AdminOrders() {
                 <th className="text-left p-4 hidden md:table-cell">Discount</th>
                 <th className="text-left p-4">Status</th>
                 <th className="text-left p-4 hidden md:table-cell">Date</th>
+                <th className="text-left p-4">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredOrders.map((order, i) => (
-                <tr key={order._id} className={`border-b border-white/5 last:border-b-0 hover:bg-white/[0.03] transition-colors ${i % 2 === 0 ? 'bg-white/[0.01]' : ''}`}>
-                  <td className="p-4"><span className="text-sm text-white/50 font-mono">{order._id.toUpperCase()}</span></td>
-                  <td className="p-4"><span className="text-sm text-white font-medium">{order.event.title}</span></td>
-                  <td className="p-4"><span className="text-sm text-white/60">{order.seats}</span></td>
-                  <td className="p-4"><span className="text-sm text-[#f72585] font-bold">₹{order.billedAmount.toLocaleString()}</span></td>
+              {filteredOrders?.map((order, i) => (
+                <tr key={order?._id} className={`border-b border-white/5 last:border-b-0 hover:bg-white/[0.03] transition-colors ${i % 2 === 0 ? 'bg-white/[0.01]' : ''}`}>
+                  <td className="p-4"><span className="text-sm text-white/50 font-mono">{order?._id?.toUpperCase()}</span></td>
+                  <td className="p-4"><span className="text-sm text-white font-medium">{order?.event?.title || 'Unknown Event'}</span></td>
+                  <td className="p-4"><span className="text-sm text-white/60">{order?.seats || 0}</span></td>
+                  <td className="p-4"><span className="text-sm text-[#f72585] font-bold">₹{order?.billedAmount?.toLocaleString() || 0}</span></td>
                   <td className="p-4 hidden md:table-cell">
-                    {order.isDiscounted ? <span className="px-2 py-0.5 rounded bg-green-500/20 text-green-400 text-[10px] font-bold uppercase">Yes</span> : <span className="text-xs text-white/30">—</span>}
+                    {order?.isDiscounted ? <span className="px-2 py-0.5 rounded bg-green-500/20 text-green-400 text-[10px] font-bold uppercase">Yes</span> : <span className="text-xs text-white/30">—</span>}
                   </td>
-                  <td className="p-4"><span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${statusColors[order.status]}`}>{order.status}</span></td>
-                  <td className="p-4 hidden md:table-cell"><span className="text-sm text-white/30">{order.createdAt}</span></td>
+                  <td className="p-4"><span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${statusColors[order?.status] || 'bg-white/10'}`}>{order?.status || 'Unknown'}</span></td>
+                  <td className="p-4 hidden md:table-cell"><span className="text-sm text-white/30">{order?.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}</span></td>
+                  <td className="p-4">
+                    <button 
+                      onClick={() => triggerDelete(order._id)}
+                      className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all flex items-center justify-center text-xs"
+                    >
+                      🗑️
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+      <Modal 
+        isOpen={modalState.isOpen}
+        onClose={() => setModalState({ isOpen: false, idToDelete: null })}
+        onConfirm={confirmDelete}
+        title="Delete Order"
+        message="Are you sure you want to permanently delete this order? This action cannot be undone."
+      />
     </AdminLayout>
   );
 }

@@ -87,12 +87,22 @@ const privateController = (req, res) => {
   res.send("Private Controller " + req.user.name);
 };
 
+const getUserInfo = async (req, res) => {
+  const user = await User.findById(req.user._id).select('-password');
+  if (user) {
+    res.status(200).json(user);
+  } else {
+    res.status(404);
+    throw new Error("User not found");
+  }
+};
+
 //Generate token
 
 export const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "10d" });
 };
 
-const authController = { registerUser, loginUser, privateController };
+const authController = { registerUser, loginUser, privateController, getUserInfo };
 
 export default authController;

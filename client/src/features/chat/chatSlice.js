@@ -7,7 +7,7 @@ export const getBotResponse = createAsyncThunk("CHAT/GET_RESPONSE", async (quest
         const token = thunkAPI.getState().auth.user.token
         return await chatService.getResponse(question, token)
     } catch (error) {
-        const message = error.response.data.message
+        const message = (error.response && error.response.data && error.response.data.message) || error.message || error.toString()
         return thunkAPI.rejectWithValue(message)
     }
 })
@@ -39,12 +39,13 @@ const chatSlice = createSlice({
             })
             .addCase(getBotResponse.fulfilled, (state, action) => {
                 state.isLoading = false
-                state.chatHistory.push({ sender: 'bot', text: action.payload.answer })
+                state.chatHistory.push({ sender: 'bot', text: action.payload.response })
             })
             .addCase(getBotResponse.rejected, (state, action) => {
                 state.isLoading = false
                 state.isError = true
                 state.message = action.payload
+                state.chatHistory.push({ sender: 'bot', text: `Error: ${action.payload}` })
             })
     }
 });

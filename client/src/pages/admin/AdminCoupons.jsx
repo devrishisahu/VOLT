@@ -1,25 +1,28 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAllCoupons, updateCoupon, deleteCoupon } from '../../features/admin/adminSlice';
 import AdminLayout from '../../components/AdminLayout';
 import Loading from '../../components/Loading';
+import Modal from '../../components/Modal';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 
 export default function AdminCoupons() {
   const dispatch = useDispatch();
   const { coupons, isLoading } = useSelector((state) => state.admin);
+  const [modalState, setModalState] = useState({ isOpen: false, idToDelete: null });
 
   useEffect(() => {
     dispatch(fetchAllCoupons());
   }, [dispatch]);
 
-  const handleDelete = (id) => {
-    if (window.confirm("Delete this coupon?")) {
-      dispatch(deleteCoupon(id)).then(res => {
-        if (!res.error) toast.success("Coupon Deleted");
-      });
-    }
+  const triggerDelete = (id) => setModalState({ isOpen: true, idToDelete: id });
+
+  const confirmDelete = () => {
+    dispatch(deleteCoupon(modalState.idToDelete)).then(res => {
+      if (!res.error) toast.success("Coupon Deleted");
+    });
+    setModalState({ isOpen: false, idToDelete: null });
   };
 
   const handleToggleStatus = (id, currentStatus) => {
@@ -70,9 +73,9 @@ export default function AdminCoupons() {
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
-                      <button className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center text-xs">✏️</button>
+                      <Link to={`/admin/coupons/edit/${coupon._id}`} className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center text-xs">✏️</Link>
                       <button 
-                        onClick={() => handleDelete(coupon._id)}
+                        onClick={() => triggerDelete(coupon._id)}
                         className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all flex items-center justify-center text-xs"
                       >
                         🗑️
@@ -85,6 +88,13 @@ export default function AdminCoupons() {
           </table>
         </div>
       </div>
+      <Modal 
+        isOpen={modalState.isOpen}
+        onClose={() => setModalState({ isOpen: false, idToDelete: null })}
+        onConfirm={confirmDelete}
+        title="Delete Coupon"
+        message="Are you sure you want to permanently delete this coupon? This action cannot be undone."
+      />
     </AdminLayout>
   );
 }

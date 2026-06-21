@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import Footer from '../components/Footer';
 import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { createEvent, reset } from '../features/event/eventSlice';
+import { createEvent, getMyEvents, reset } from '../features/event/eventSlice';
 import { toast } from 'react-toastify';
 import Loading from '../components/Loading';
 
@@ -22,18 +22,23 @@ export default function SubmitEvent() {
     totalSeats: '',
     ticketPrice: '',
     duration: '',
+    genre: '',
     image: null
   });
 
-  const { title, eventArtistName, description, eventLocation, eventDate, totalSeats, ticketPrice, duration, image } = formData;
+  const { title, eventArtistName, description, eventLocation, eventDate, totalSeats, ticketPrice, duration, genre, image } = formData;
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const submitted = useRef(false);
 
-  const { isLoading, isSuccess, isError, message } = useSelector((state) => state.event);
-  const mySubmissions = [];
+  const { isLoading, isSuccess, isError, message, myEvents } = useSelector((state) => state.event);
+  const mySubmissions = myEvents || [];
 
+
+  useEffect(() => {
+    dispatch(getMyEvents());
+  }, [dispatch]);
 
   useEffect(() => {
     if (submitted.current) {
@@ -45,6 +50,7 @@ export default function SubmitEvent() {
       if (isSuccess) {
         toast.success("Event Submitted Successfully!");
         dispatch(reset());
+        dispatch(getMyEvents());
         submitted.current = false;
         navigate('/');
       }
@@ -71,6 +77,7 @@ export default function SubmitEvent() {
     eventData.append('totalSeats', totalSeats);
     eventData.append('ticketPrice', ticketPrice);
     eventData.append('duration', duration);
+    eventData.append('genre', genre);
     eventData.append('eventImage', image);
 
     submitted.current = true;
@@ -199,6 +206,23 @@ export default function SubmitEvent() {
                   />
                 </div>
                 <div>
+                  <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">Genre / Category *</label>
+                  <select 
+                    name="genre"
+                    value={genre}
+                    onChange={onChange}
+                    className="w-full bg-[#111111] border border-white/10 rounded-xl px-4 py-3.5 text-white outline-none focus:border-[#f72585]/50 transition-colors appearance-none" 
+                    required
+                  >
+                    <option value="" disabled>Select a genre</option>
+                    <option value="ROCK">ROCK</option>
+                    <option value="POP">POP</option>
+                    <option value="EDM">EDM</option>
+                    <option value="TECHNO">TECHNO</option>
+                    <option value="HIP HOP">HIP HOP</option>
+                  </select>
+                </div>
+                <div>
                   <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">Event Poster</label>
                   <label className="flex flex-col items-center justify-center w-full h-28 bg-white/5 border-2 border-dashed border-white/10 rounded-xl cursor-pointer hover:border-[#f72585]/50 transition-colors">
                     <input 
@@ -242,7 +266,7 @@ export default function SubmitEvent() {
             ) : (
               <div className="space-y-4">
                 {mySubmissions.map((event, i) => {
-                  const st = statusStyles[event.approvalStatus];
+                  const st = event.isActive ? statusStyles.approved : statusStyles.pending;
                   return (
                     <div key={event._id} className={`${st.bg} border rounded-2xl p-5 animate-fade-in-up`} style={{ animationDelay: `${i * 100 + 400}ms` }}>
                       <div className="flex flex-col md:flex-row gap-5">
@@ -261,13 +285,8 @@ export default function SubmitEvent() {
                             <span>📅 {event.eventDate}</span>
                             <span>📍 {event.eventLocation}</span>
                             <span>🎫 ₹{event.ticketPrice.toLocaleString()}</span>
-                            <span>Submitted: {event.submittedAt}</span>
+                            <span>Submitted: {new Date(event.createdAt).toLocaleDateString()}</span>
                           </div>
-                          {event.approvalStatus === 'rejected' && event.rejectionNote && (
-                            <div className="mt-3 bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-xs text-red-400">
-                              <span className="font-bold">Reason:</span> {event.rejectionNote}
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>

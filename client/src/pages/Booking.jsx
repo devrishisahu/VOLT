@@ -2,7 +2,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getEvents } from '../features/event/eventSlice';
-import { bookTicket, verifyCoupon, reset } from '../features/order/orderSlice';
+import { bookTicket, verifyCoupon, removeCoupon, reset } from '../features/order/orderSlice';
+import { syncUser } from '../features/auth/authSlice';
 import { toast } from 'react-toastify';
 import Loading from '../components/Loading';
 
@@ -38,6 +39,7 @@ export default function Booking() {
 
   const [numberOfSeats, setNumberOfSeats] = useState(1);
   const [couponCode, setCouponCode] = useState('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   useEffect(() => {
     if (events.length === 0) {
@@ -45,29 +47,34 @@ export default function Booking() {
     }
   }, [events, dispatch]);
 
-  useEffect(() => {
-    if (isError) {
-      toast.error(message);
-      dispatch(reset());
-    }
-    if (isSuccess) {
-      toast.success("Ticket Booked Successfully!");
-      dispatch(reset());
-      navigate('/profile');
-    }
-  }, [isError, isSuccess, message, navigate, dispatch]);
-
   const handleBooking = () => {
     dispatch(bookTicket({ 
       eventId: id, 
-      bookingData: { numberOfSeats, couponCode } 
-    }));
+      bookingData: { 
+        numberOfSeats, 
+        couponCode: appliedCoupon ? appliedCoupon.couponCode : '' 
+      } 
+    })).then((res) => {
+      if (!res.error) {
+        toast.success("Ticket Booked Successfully!");
+        setShowConfirmModal(false);
+        dispatch(syncUser());
+        navigate(`/ticket/${res.payload._id}`);
+      } else {
+        toast.error(res.payload);
+      }
+    });
   };
 
   if (!user) return null;
   if (!event) return <Loading />;
 
   const currentStep = 2; // hardcoded to show confirm step
+
+  const subtotal = event.ticketPrice * numberOfSeats;
+  const discount = appliedCoupon ? (subtotal * appliedCoupon.couponDiscount) / 100 : 0;
+  const total = subtotal - discount;
+  const remainingCredits = user.credits - total;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-start justify-center pt-10 md:pt-20 px-4 pb-24">
@@ -136,17 +143,27 @@ export default function Booking() {
           <div className="flex gap-2">
             <input
               type="text"
-              value={couponCode}
+              value={appliedCoupon ? appliedCoupon.couponCode : couponCode}
               onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+              disabled={!!appliedCoupon}
               placeholder="Enter coupon code"
-              className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-[#f72585]/50"
+              className={`flex-1 bg-white/5 border rounded-lg px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none transition-colors ${appliedCoupon ? 'border-green-500/50 text-green-400' : 'border-white/10 focus:border-[#f72585]/50'}`}
             />
-            <button 
-              onClick={handleApplyCoupon}
-              className="px-4 py-3 bg-[#f72585]/10 text-[#f72585] text-sm font-bold rounded-lg border border-[#f72585]/20 hover:bg-[#f72585]/20 transition-all"
-            >
-              Apply
-            </button>
+            {appliedCoupon ? (
+              <button 
+                onClick={() => { dispatch(removeCoupon()); setCouponCode(''); }}
+                className="px-4 py-3 bg-red-500/10 text-red-500 text-sm font-bold rounded-lg border border-red-500/20 hover:bg-red-500/20 transition-all"
+              >
+                Remove
+              </button>
+            ) : (
+              <button 
+                onClick={handleApplyCoupon}
+                className="px-4 py-3 bg-[#f72585]/10 text-[#f72585] text-sm font-bold rounded-lg border border-[#f72585]/20 hover:bg-[#f72585]/20 transition-all"
+              >
+                Apply
+              </button>
+            )}
           </div>
           <p className="text-[10px] text-white/20 mt-3 italic">Coupons are applied automatically if valid during confirmation.</p>
         </div>
@@ -191,17 +208,72 @@ export default function Booking() {
           </div>
 
           <button 
-            onClick={handleBooking}
+            onClick={() => setShowConfirmModal(true)}
             disabled={isLoading}
             className="mt-6 w-full py-4 bg-[#f72585] text-white font-bold uppercase tracking-wider rounded-xl hover:shadow-[0_0_30px_rgba(247,37,133,0.5)] transition-all duration-300 animate-glow-pulse text-lg block text-center disabled:opacity-50"
           >
-            {isLoading ? 'Processing...' : 'Confirm Booking'}
+            Confirm Booking
           </button>
           <p className="text-[10px] text-white/20 text-center mt-3 uppercase tracking-widest italic">Credits will be deducted from your wallet</p>
         </div>
 
         <Link to="/events" className="block text-center text-sm text-white/30 hover:text-[#f72585] transition-colors mt-8">← Back to Events</Link>
       </div>
+
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#111] border border-[#f72585]/30 rounded-2xl w-full max-w-md overflow-hidden shadow-[0_0_50px_rgba(247,37,133,0.15)]">
+            <div className="p-6 border-b border-white/10">
+              <h2 className="text-xl font-black uppercase text-white tracking-tight">Confirm Booking</h2>
+              <p className="text-sm text-white/40 mt-1">Review your ticket details before purchasing</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex justify-between items-center bg-white/5 rounded-lg p-3">
+                <span className="text-sm text-white/50 uppercase tracking-widest">Event</span>
+                <span className="text-sm font-bold text-white text-right">{event.title}</span>
+              </div>
+              <div className="flex justify-between items-center bg-white/5 rounded-lg p-3">
+                <span className="text-sm text-white/50 uppercase tracking-widest">Seats</span>
+                <span className="text-sm font-bold text-white">{numberOfSeats}</span>
+              </div>
+              <div className="flex justify-between items-center bg-white/5 rounded-lg p-3">
+                <span className="text-sm text-white/50 uppercase tracking-widest">Total Cost</span>
+                <span className="text-sm font-bold text-[#f72585]">₹{total.toLocaleString()}</span>
+              </div>
+              <div className="pt-4 mt-4 border-t border-white/10">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-white/50">Current Credits</span>
+                  <span className="text-sm text-white">₹{Number(user.credits).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-white/50">Remaining Credits</span>
+                  <span className={`text-sm font-bold ${remainingCredits < 0 ? 'text-red-500' : 'text-[#00f5ff]'}`}>
+                    ₹{remainingCredits.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+                {remainingCredits < 0 && (
+                  <p className="text-xs text-red-500 mt-4 text-center bg-red-500/10 py-2.5 rounded-lg border border-red-500/20">Insufficient credits to complete this booking.</p>
+                )}
+              </div>
+            </div>
+            <div className="p-6 pt-0 flex gap-3">
+              <button 
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 py-3.5 bg-white/5 text-white/60 font-bold uppercase tracking-wider rounded-xl hover:bg-white/10 hover:text-white transition-all text-sm"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleBooking}
+                disabled={isLoading || remainingCredits < 0}
+                className="flex-1 py-3.5 bg-[#f72585] text-white font-bold uppercase tracking-wider rounded-xl hover:shadow-[0_0_30px_rgba(247,37,133,0.4)] transition-all text-sm disabled:opacity-50"
+              >
+                {isLoading ? 'Processing...' : 'Book Ticket'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -8,9 +8,25 @@ const fetchEvents = async () => {
 };
 
 const createEvent = async (formData, token) => {
-    return { _id: Date.now().toString(), ...formData, status: "upcoming", isActive: true };
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    };
+    const response = await axios.post(API_URL, formData, config);
+    return response.data;
 }
 
-const eventService = { fetchEvents, createEvent }
+const getMyEvents = async (token) => {
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    };
+    const response = await axios.get(`${API_URL}/mine`, config);
+    return response.data;
+}
+
+const eventService = { fetchEvents, createEvent, getMyEvents }
 
 export default eventService

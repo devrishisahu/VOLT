@@ -39,7 +39,7 @@ const updateCreditRequestStatus = async (req, res) => {
         throw new Error("Request not found");
     }
 
-    if (status === 'approved') {
+    if (status === 'approved' && request.status !== 'approved') {
         const user = await User.findById(request.user);
         user.credits += request.amount;
         await user.save();
@@ -48,13 +48,21 @@ const updateCreditRequestStatus = async (req, res) => {
     request.status = status;
     await request.save();
 
+    await request.populate('user', 'name email');
+
     res.status(200).json(request);
+};
+
+const getUserCreditRequests = async (req, res) => {
+    const requests = await CreditRequest.find({ user: req.user._id }).sort({ createdAt: -1 });
+    res.status(200).json(requests);
 };
 
 const creditController = {
     createCreditRequest,
     getAllCreditRequests,
-    updateCreditRequestStatus
+    updateCreditRequestStatus,
+    getUserCreditRequests
 };
 
 export default creditController;

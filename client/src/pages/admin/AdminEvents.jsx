@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { fetchAllEvents, updateEventInfo, deleteEvent } from '../../features/admin/adminSlice';
 import AdminLayout from '../../components/AdminLayout';
 import Loading from '../../components/Loading';
+import Modal from '../../components/Modal';
 import { toast } from 'react-toastify';
 
 const statusColors = {
@@ -16,6 +17,9 @@ export default function AdminEvents() {
   const dispatch = useDispatch();
   const { events, isLoading } = useSelector((state) => state.admin);
 
+  const [filter, setFilter] = useState('All Events');
+  const [modalState, setModalState] = useState({ isOpen: false, idToDelete: null });
+
   useEffect(() => {
     dispatch(fetchAllEvents());
   }, [dispatch]);
@@ -26,13 +30,23 @@ export default function AdminEvents() {
     });
   };
 
-  const handleDeleteEvent = (id) => {
-    if (window.confirm("Delete this event forever?")) {
-      dispatch(deleteEvent(id)).then(res => {
-        if(!res.error) toast.success("Event Deleted");
-      });
-    }
+  const triggerDelete = (id) => setModalState({ isOpen: true, idToDelete: id });
+
+  const confirmDelete = () => {
+    dispatch(deleteEvent(modalState.idToDelete)).then(res => {
+      if(!res.error) toast.success("Event Deleted");
+    });
+    setModalState({ isOpen: false, idToDelete: null });
   };
+
+  const filteredEvents = events?.filter(event => {
+    if (filter === 'Pending Approval') return !event.isActive;
+    if (filter === 'Active') return event.isActive;
+    if (filter === 'Upcoming') return event.status === 'upcoming';
+    if (filter === 'Ongoing') return event.status === 'ongoing';
+    if (filter === 'Expired') return event.status === 'expired';
+    return true; // 'All Events'
+  });
 
   if (isLoading) return <Loading />;
   return (
@@ -40,11 +54,17 @@ export default function AdminEvents() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
         <div>
           <h1 className="text-3xl font-black uppercase tracking-tight text-white animate-fade-in-up">Manage Events</h1>
-          <p className="text-white/40 mt-1">{events.length} events found</p>
+          <p className="text-white/40 mt-1">{filteredEvents?.length || 0} events found</p>
         </div>
         <div className="flex items-center gap-3">
-          <select className="bg-[#141414] border border-white/10 rounded-lg px-3 py-2 text-xs text-white/60 outline-none [&>option]:bg-[#141414] [&>option]:text-white">
-            <option>All Status</option>
+          <select 
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="bg-[#141414] border border-white/10 rounded-lg px-3 py-2 text-xs text-white/60 outline-none [&>option]:bg-[#141414] [&>option]:text-white"
+          >
+            <option>All Events</option>
+            <option>Pending Approval</option>
+            <option>Active</option>
             <option>Upcoming</option>
             <option>Ongoing</option>
             <option>Expired</option>
@@ -69,7 +89,7 @@ export default function AdminEvents() {
               </tr>
             </thead>
             <tbody>
-              {events?.map((event, i) => (
+              {filteredEvents?.map((event, i) => (
                 <tr key={event._id} className={`border-b border-white/5 last:border-b-0 hover:bg-white/[0.03] transition-colors ${i % 2 === 0 ? 'bg-white/[0.01]' : ''}`}>
                   <td className="p-4">
                     <div className="flex items-center gap-3">
@@ -94,7 +114,7 @@ export default function AdminEvents() {
                     <div className="flex items-center gap-2">
                       <Link to={`/admin/events/edit/${event._id}`} className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center text-xs">✏️</Link>
                       <button 
-                        onClick={() => handleDeleteEvent(event._id)}
+                        onClick={() => triggerDelete(event._id)}
                         className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all flex items-center justify-center text-xs"
                       >
                         🗑️
@@ -107,6 +127,13 @@ export default function AdminEvents() {
           </table>
         </div>
       </div>
+      <Modal 
+        isOpen={modalState.isOpen}
+        onClose={() => setModalState({ isOpen: false, idToDelete: null })}
+        onConfirm={confirmDelete}
+        title="Delete Event"
+        message="Are you sure you want to permanently delete this event? This action cannot be undone."
+      />
     </AdminLayout>
   );
 }

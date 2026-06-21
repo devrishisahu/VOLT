@@ -50,6 +50,25 @@ const addComment = async (req, res) => {
   res.status(200).json(newComment);
 };
 
-const commentController = { getComments, addComment };
+const deleteComment = async (req, res) => {
+  const commentId = req.params.cid;
+  const comment = await Comment.findById(commentId);
+
+  if (!comment) {
+    res.status(404);
+    throw new Error("Comment Not Found!");
+  }
+
+  // Ensure user owns comment or is admin
+  if (comment.user.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+    res.status(401);
+    throw new Error("Not Authorized to delete this comment");
+  }
+
+  await comment.deleteOne();
+  res.status(200).json({ id: commentId });
+};
+
+const commentController = { getComments, addComment, deleteComment };
 
 export default commentController;

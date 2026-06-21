@@ -30,6 +30,10 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    cancellationFee: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

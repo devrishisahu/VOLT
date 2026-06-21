@@ -63,12 +63,7 @@ const bookTicket = async (req, res) => {
 
   // check if user have already booked 5 seats
 
-  const allPreviousOrders = await Order.find({ event: event._id });
-
-  // Filter my Orders By Event
-  const myOrders = allPreviousOrders.filter(
-    (order) => order.user.toString() === userId.toString(),
-  );
+  const myOrders = await Order.find({ event: event._id, user: userId });
 
   // calculate Total Seats Booked
 
@@ -165,7 +160,7 @@ const cancelTicket = async (req, res) => {
   }
 
   //Find Event
-  const event = await Event.findOne(ticket.event);
+  const event = await Event.findById(ticket.event);
 
   //Find User
   const user = await User.findById(userId);
@@ -174,6 +169,26 @@ const cancelTicket = async (req, res) => {
   if (ticket.status === "expired") {
     res.status(409);
     throw new Error(" Ticket Already Expired ...");
+  }
+
+  const now = Date.now();
+  const ticketDate = new Date(ticket.createdAt).getTime();
+  const elapsedMs = now - ticketDate;
+  
+  const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+  const ONE_DAY = 24 * 60 * 60 * 1000;
+
+  if (elapsedMs > SEVEN_DAYS) {
+    res.status(400);
+    throw new Error("Cannot cancel ticket after 7 days of booking.");
+  }
+
+  let refundAmount = ticket.billedAmount;
+  let fee = 0;
+
+  if (elapsedMs > ONE_DAY) {
+    fee = ticket.billedAmount * 0.1;
+    refundAmount = ticket.billedAmount - fee;
   }
 
   //Increase Seats
@@ -190,15 +205,15 @@ const cancelTicket = async (req, res) => {
 
   await User.findByIdAndUpdate(
     userId,
-    { credits: user.credits + ticket.billedAmount },
+    { credits: user.credits + refundAmount },
     { new: true },
   );
 
   const updatedTicket = await Order.findByIdAndUpdate(
     ticket._id,
-    { status: "cancelled" },
+    { status: "cancelled", cancellationFee: fee },
     { new: true },
-  );
+  ).populate("event");
 
   if (!updatedTicket) {
     res.status(409);

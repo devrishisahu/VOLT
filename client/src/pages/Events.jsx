@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import Footer from '../components/Footer';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getEvents } from '../features/event/eventSlice';
 import Loading from '../components/Loading';
@@ -25,6 +25,17 @@ const statusColors = {
 export default function Events() {
   const dispatch = useDispatch();
   const { events, isLoading } = useSelector((state) => state.event);
+  const [activeTab, setActiveTab] = useState('All');
+  const [sortOrder, setSortOrder] = useState('Sort by Price');
+
+  const filteredEvents = events.filter((event) => {
+    if (activeTab === 'All') return true;
+    return event.status.toLowerCase() === activeTab.toLowerCase();
+  }).sort((a, b) => {
+    if (sortOrder === 'Low to High') return a.ticketPrice - b.ticketPrice;
+    if (sortOrder === 'High to Low') return b.ticketPrice - a.ticketPrice;
+    return 0; // Default or 'Sort by Price'
+  });
 
   useEffect(() => {
     dispatch(getEvents());
@@ -50,11 +61,12 @@ export default function Events() {
         <div className="max-w-7xl mx-auto bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex flex-wrap items-center gap-4">
           {/* Status Tabs */}
           <div className="flex gap-2">
-            {statusTabs.map((tab, i) => (
+            {statusTabs.map((tab) => (
               <button
                 key={tab}
+                onClick={() => setActiveTab(tab)}
                 className={`px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all ${
-                  i === 0 ? 'bg-[#f72585] text-white' : 'text-white/40 hover:text-white hover:bg-white/5'
+                  activeTab === tab ? 'bg-[#f72585] text-white' : 'text-white/40 hover:text-white hover:bg-white/5'
                 }`}
               >
                 {tab}
@@ -62,10 +74,14 @@ export default function Events() {
             ))}
           </div>
           <div className="flex-1" />
-          <select className="bg-[#141414] border border-white/10 rounded-lg px-3 py-2 text-xs text-white/60 outline-none [&>option]:bg-[#141414] [&>option]:text-white">
-            <option>Sort by Price</option>
-            <option>Low to High</option>
-            <option>High to Low</option>
+          <select 
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+            className="bg-[#141414] border border-white/10 rounded-lg px-3 py-2 text-xs text-white/60 outline-none [&>option]:bg-[#141414] [&>option]:text-white"
+          >
+            <option value="Sort by Price">Sort by Price</option>
+            <option value="Low to High">Low to High</option>
+            <option value="High to Low">High to Low</option>
           </select>
         </div>
       </section>
@@ -73,7 +89,7 @@ export default function Events() {
       {/* Events Grid */}
       <section className="px-6 md:px-16 mt-10 pb-20">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events.map((event) => (
+          {filteredEvents.map((event) => (
             <Link
               key={event._id}
               to={`/events/${event._id}`}

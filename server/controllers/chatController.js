@@ -1,77 +1,66 @@
 import { GoogleGenAI } from "@google/genai";
+import User from "../models/userModel.js";
 import Event from "../models/eventModel.js";
-import Order from "../models/orderModel.js";
-import Comment from "../models/commentModel.js";
-import Coupon from "../models/couponModel.js";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const askVoltBot = async (req, res) => {
+  const { message } = req.body;
 
-let SYSTEM_PROMPT = `You are MoodGo Assistant, a friendly and helpful support assistant for the MoodGo platform.
+  if (!message) {
+    res.status(400);
+    throw new Error("Message is required.");
+  }
 
-MoodGo is an event discovery and ticket booking platform similar to District. Your job is to help users with queries related ONLY to MoodGo events and bookings.
+  // 1. Rate Limiting Check
+  const user = await User.findById(req.user._id);
+  const now = new Date();
+  const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
 
-Your responsibilities include:
-1. Providing details about events listed on MoodGo.
-2. Helping users check their booking details.
-3. Suggesting events when users ask for recommendations.
-4. Answering questions about event timing, location, pricing, availability, and basic event information.
+  // Filter out queries older than 12 hours
+  user.voltbotQueries = user.voltbotQueries.filter(date => date >= twelveHoursAgo);
 
-Event data will be provided through a function that retrieves event information from the database. Always rely on this data when answering event-related questions.
+  if (user.voltbotQueries.length >= 25) {
+    res.status(429);
+    throw new Error("You have reached your limit of 25 questions per 12 hours. Please try again later.");
+  }
 
-Behavior Rules:
-- Be polite, friendly, and supportive in tone.
-- Keep responses clear, short, and helpful.
-- If the user asks for event details, retrieve and use the available event data.
-- If the user asks about their bookings, provide booking-related help using available booking information.
-- If the user asks for suggestions, recommend relevant events based on the available event list.
+  // 2. Add current query timestamp
+  user.voltbotQueries.push(now);
+  await user.save();
 
-Strict Scope Limitation:
-You are ONLY allowed to answer questions related to:
-- MoodGo events
-- Event details
-- Event suggestions
-- User booking details
+  // 3. AI Integration
+  try {
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    
+    // Fetch live events to feed into the AI
+    const liveEvents = await Event.find({ isActive: true }).select('title eventDate eventLocation eventArtistName ticketPrice genre duration');
+    const eventsContext = liveEvents.map(e => `- ${e.title} by ${e.eventArtistName} in ${e.eventLocation} on ${e.eventDate}. Genre: ${e.genre || 'N/A'}. Price: ₹${e.ticketPrice}.`).join('\n');
 
-If a user asks anything outside these topics (for example: general knowledge, coding, weather, news, personal questions, or anything unrelated to MoodGo), respond exactly with:
+    const systemPrompt = `You are VoltBot, an AI assistant for the VOLT live concert ticketing app. 
+You ONLY answer questions about concerts, events, ticketing, artists, and the VOLT platform itself.
+If the user asks anything outside of this context (like programming, general knowledge, recipes, etc), 
+politely decline and remind them you are here to help with VOLT events. Be concise and energetic!
 
-"I can't help with this."
+Here are the current live events available on VOLT right now:
+${eventsContext || 'No live events are currently scheduled.'}
 
-Do not attempt to answer questions outside the MoodGo platform.
+Use this information to answer user questions accurately. Do not make up events that are not in this list.`;
 
-Personality:
-- Friendly
-- Supportive
-- Professional
-- Helpful event guide
-
-Your goal is to help users quickly discover events, understand event details, and manage their bookings on MoodGo.`
-
-const giveAnswer = async (req, res) => {
-
-    let { text } = req.body
-
-    if (!text) {
-        res.status(409)
-        throw new Error("Please Ask Question!")
-    }
-
-    let events = await Event.find()
-    let orders = await Order.find({ user: req.user._id })
-    let ratings = await Comment.find()
-    let coupons = await Coupon.find()
-
-
-    const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `Here is all data: Events: ${JSON.stringify(events)}, Orders: ${JSON.stringify(orders)}, Ratings: ${JSON.stringify(ratings)}, Coupons: ${JSON.stringify(coupons)}. Based on that, ${SYSTEM_PROMPT}. Answer: ${text}`
+    const chat = ai.chats.create({
+      model: "gemini-2.5-flash",
+      config: {
+        systemInstruction: systemPrompt,
+      }
     });
 
+    const response = await chat.sendMessage({ message: message });
 
+    res.status(200).json({ response: response.text });
+  } catch (error) {
+    console.error("VoltBot Error:", error);
+    res.status(500);
+    throw new Error("VoltBot is currently offline or experiencing issues.");
+  }
+};
 
-    res.status(200).json(response.text)
-
-
-}
-
-
-export default giveAnswer
+const chatController = { askVoltBot };
+export default chatController;

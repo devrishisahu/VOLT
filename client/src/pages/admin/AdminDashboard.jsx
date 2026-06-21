@@ -1,15 +1,11 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { events, orders, users, pendingEvents } from '../../data/mockData';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchAllUsers, fetchAllEvents, fetchAllOrders, updateEventInfo, deleteEvent } from '../../features/admin/adminSlice';
 import AdminLayout from '../../components/AdminLayout';
-
-const pendingCount = pendingEvents.filter(e => e.approvalStatus === 'pending').length;
-
-const stats = [
-  { label: 'Total Users', value: users.length, icon: '👥', change: '+12%' },
-  { label: 'Total Events', value: events.length, icon: '🎪', change: '+8%' },
-  { label: 'Total Orders', value: orders.length, icon: '📋', change: '+24%' },
-  { label: 'Pending Approvals', value: pendingCount, icon: '⏳', change: 'Action', changeColor: pendingCount > 0 ? 'bg-amber-500/10 text-amber-400' : 'bg-green-500/10 text-green-400' },
-];
+import Loading from '../../components/Loading';
+import Modal from '../../components/Modal';
+import { toast } from 'react-toastify';
 
 const statusColors = {
   confirmed: 'bg-green-500/20 text-green-400',
@@ -17,14 +13,60 @@ const statusColors = {
   cancelled: 'bg-red-500/20 text-red-400',
 };
 
-const eventStatusData = [
-  { label: 'Upcoming', count: 3, color: '#00f5ff', pct: 60 },
-  { label: 'Ongoing', count: 1, color: '#f72585', pct: 20 },
-  { label: 'Expired', count: 1, color: '#555555', pct: 20 },
-];
-
 export default function AdminDashboard() {
-  const pendingList = pendingEvents.filter(e => e.approvalStatus === 'pending');
+  const dispatch = useDispatch();
+  const { users, events, orders, isLoading } = useSelector((state) => state.admin);
+  const [modalState, setModalState] = useState({ isOpen: false, idToDelete: null });
+
+  useEffect(() => {
+    dispatch(fetchAllUsers());
+    dispatch(fetchAllEvents());
+    dispatch(fetchAllOrders());
+  }, [dispatch]);
+
+  const handleApprove = (eventId) => {
+    dispatch(updateEventInfo({ eventId, eventData: { isActive: true } })).then(res => {
+      if(!res.error) toast.success("Event Approved!");
+    });
+  };
+
+  const triggerReject = (id) => setModalState({ isOpen: true, idToDelete: id });
+
+  const confirmReject = () => {
+    dispatch(deleteEvent(modalState.idToDelete)).then(res => {
+      if(!res.error) toast.success("Event Rejected & Deleted");
+    });
+    setModalState({ isOpen: false, idToDelete: null });
+  };
+
+  const pendingList = events?.filter(e => !e.isActive) || [];
+  const upcomingCount = events?.filter(e => e.status === 'upcoming').length || 0;
+  const ongoingCount = events?.filter(e => e.status === 'ongoing').length || 0;
+  const expiredCount = events?.filter(e => e.status === 'expired').length || 0;
+  const totalEvents = events?.length || 0;
+  
+  const totalRevenue = orders?.reduce((sum, order) => {
+    if (order.status === 'cancelled') {
+      return sum + (order.cancellationFee || 0);
+    }
+    return sum + (order.billedAmount || 0);
+  }, 0) || 0;
+
+  const eventStatusData = [
+    { label: 'Upcoming', count: upcomingCount, color: '#00f5ff', pct: totalEvents ? (upcomingCount/totalEvents)*100 : 0 },
+    { label: 'Ongoing', count: ongoingCount, color: '#f72585', pct: totalEvents ? (ongoingCount/totalEvents)*100 : 0 },
+    { label: 'Expired', count: expiredCount, color: '#555555', pct: totalEvents ? (expiredCount/totalEvents)*100 : 0 },
+  ];
+
+  const stats = [
+    { label: 'Total Users', value: users?.length || 0, icon: '👥', change: 'Live' },
+    { label: 'Total Events', value: events?.length || 0, icon: '🎪', change: 'Live' },
+    { label: 'Total Orders', value: orders?.length || 0, icon: '📋', change: 'Live' },
+    { label: 'Pending Approvals', value: pendingList.length, icon: '⏳', change: 'Action', changeColor: pendingList.length > 0 ? 'bg-amber-500/10 text-amber-400' : 'bg-green-500/10 text-green-400' },
+    { label: 'Total Revenue', value: `₹${totalRevenue.toLocaleString()}`, icon: '💰', change: 'Live', changeColor: 'bg-[#00f5ff]/10 text-[#00f5ff]' },
+  ];
+
+  if (isLoading) return <Loading />;
 
   return (
     <AdminLayout current="/admin">
@@ -41,7 +83,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
         {stats.map((stat, i) => (
           <div key={stat.label} className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all animate-fade-in-up" style={{ animationDelay: `${i * 100}ms` }}>
             <div className="flex justify-between items-start">
@@ -78,17 +120,23 @@ export default function AdminDashboard() {
                     <div className="mt-3 flex flex-wrap gap-4 text-xs text-white/40">
                       <span>📅 {event.eventDate}</span>
                       <span>📍 {event.eventLocation}</span>
-                      <span>🎫 ₹{event.ticketPrice.toLocaleString()}</span>
-                      <span>💺 {event.totalSeats.toLocaleString()} seats</span>
-                      <span>🎵 {event.genre}</span>
-                    </div>
-                    <div className="mt-2 text-xs text-white/30">
-                      Submitted by <span className="text-white/60 font-medium">{event.submittedBy}</span> on {event.submittedAt}
+                      <span>🎫 ₹{event.ticketPrice?.toLocaleString() || 0}</span>
+                      <span>💺 {event.totalSeats?.toLocaleString() || 0} seats</span>
                     </div>
                   </div>
                   <div className="flex md:flex-col gap-2 shrink-0 md:justify-center">
-                    <button className="px-5 py-2.5 bg-green-500/20 text-green-400 text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-green-500/30 transition-all border border-green-500/20">✓ Approve</button>
-                    <button className="px-5 py-2.5 bg-red-500/20 text-red-400 text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-red-500/30 transition-all border border-red-500/20">✗ Reject</button>
+                    <button 
+                      onClick={() => handleApprove(event._id)}
+                      className="px-5 py-2.5 bg-green-500/20 text-green-400 text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-green-500/30 transition-all border border-green-500/20"
+                    >
+                      ✓ Approve
+                    </button>
+                    <button 
+                      onClick={() => triggerReject(event._id)}
+                      className="px-5 py-2.5 bg-red-500/20 text-red-400 text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-red-500/30 transition-all border border-red-500/20"
+                    >
+                      ✗ Reject
+                    </button>
                   </div>
                 </div>
               </div>
@@ -113,13 +161,13 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {orders.map((order) => (
+                {orders?.slice(0, 5).map((order) => (
                   <tr key={order._id} className="border-b border-white/5 last:border-b-0">
-                    <td className="py-3 pr-4"><span className="text-sm text-white font-medium">{order.event.title}</span></td>
+                    <td className="py-3 pr-4"><span className="text-sm text-white font-medium">{order?.event?.title || 'Unknown'}</span></td>
                     <td className="py-3 pr-4"><span className="text-sm text-white/60">{order.seats}</span></td>
-                    <td className="py-3 pr-4"><span className="text-sm text-[#f72585] font-bold">₹{order.billedAmount.toLocaleString()}</span></td>
-                    <td className="py-3 pr-4"><span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${statusColors[order.status]}`}>{order.status}</span></td>
-                    <td className="py-3"><span className="text-sm text-white/30">{order.createdAt}</span></td>
+                    <td className="py-3 pr-4"><span className="text-sm text-[#f72585] font-bold">₹{order?.billedAmount?.toLocaleString() || 0}</span></td>
+                    <td className="py-3 pr-4"><span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${statusColors[order.status] || 'bg-white/10'}`}>{order?.status || 'Unknown'}</span></td>
+                    <td className="py-3"><span className="text-sm text-white/30">{order?.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}</span></td>
                   </tr>
                 ))}
               </tbody>
@@ -134,12 +182,12 @@ export default function AdminDashboard() {
             <div className="relative w-40 h-40">
               <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
                 <circle cx="18" cy="18" r="14" fill="none" stroke="#1a1a1a" strokeWidth="4" />
-                <circle cx="18" cy="18" r="14" fill="none" stroke="#00f5ff" strokeWidth="4" strokeDasharray="60 40" strokeDashoffset="0" />
-                <circle cx="18" cy="18" r="14" fill="none" stroke="#f72585" strokeWidth="4" strokeDasharray="20 80" strokeDashoffset="-60" />
-                <circle cx="18" cy="18" r="14" fill="none" stroke="#555555" strokeWidth="4" strokeDasharray="20 80" strokeDashoffset="-80" />
+                <circle cx="18" cy="18" r="14" fill="none" stroke="#00f5ff" strokeWidth="4" strokeDasharray={`${eventStatusData[0].pct} ${100 - eventStatusData[0].pct}`} strokeDashoffset="0" />
+                <circle cx="18" cy="18" r="14" fill="none" stroke="#f72585" strokeWidth="4" strokeDasharray={`${eventStatusData[1].pct} ${100 - eventStatusData[1].pct}`} strokeDashoffset={`-${eventStatusData[0].pct}`} />
+                <circle cx="18" cy="18" r="14" fill="none" stroke="#555555" strokeWidth="4" strokeDasharray={`${eventStatusData[2].pct} ${100 - eventStatusData[2].pct}`} strokeDashoffset={`-${eventStatusData[0].pct + eventStatusData[1].pct}`} />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-2xl font-black text-white">{events.length}</span>
+                <span className="text-2xl font-black text-white">{totalEvents}</span>
                 <span className="text-[10px] text-white/40 uppercase tracking-wider">Total</span>
               </div>
             </div>
@@ -157,6 +205,13 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+      <Modal 
+        isOpen={modalState.isOpen}
+        onClose={() => setModalState({ isOpen: false, idToDelete: null })}
+        onConfirm={confirmReject}
+        title="Reject & Delete Event"
+        message="Are you sure you want to reject this event? This will permanently delete the event data."
+      />
     </AdminLayout>
   );
 }

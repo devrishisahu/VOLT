@@ -21,14 +21,11 @@ export default function Profile() {
   useEffect(() => {
     if (!user) {
       navigate('/login');
-    } else if (user.isAdmin) {
-      navigate('/admin');
     } else {
       dispatch(getMyOrders());
     }
   }, [user, navigate, dispatch]);
 
-  const tabs = ['My Tickets', 'Activity'];
 
   if (isLoading) return <Loading />;
   if (!user) return null;
@@ -57,43 +54,34 @@ export default function Profile() {
               </div>
               <div className="bg-white/5 border border-white/10 rounded-xl px-6 py-4 text-center">
                 <p className="text-xs text-white/40 uppercase tracking-widest">Credits</p>
-                <p className="text-3xl font-black text-[#f72585] mt-1">{user.credits}</p>
+                <p className="text-3xl font-black text-[#f72585] mt-1">{Number(user.credits).toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
               </div>
             </div>
           </div>
 
-          {/* Tabs */}
-          <div className="flex gap-4 mt-10 mb-8">
-            {tabs.map((tab, i) => (
-              <button
-                key={tab}
-                className={`px-6 py-3 rounded-xl text-sm font-semibold uppercase tracking-wider transition-all ${
-                  i === 0
-                    ? 'bg-[#f72585] text-white shadow-[0_0_20px_rgba(247,37,133,0.3)]'
-                    : 'bg-white/5 text-white/40 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+          {/* Section Header */}
+          <div className="mt-10 mb-6">
+            <h2 className="text-xl font-bold text-white uppercase tracking-tight">My Tickets</h2>
           </div>
 
           {/* Orders — now clickable to ticket detail */}
           <div className="space-y-4">
             {orders.length > 0 ? (
-              orders.map((order, i) => (
+              orders.map((order, i) => {
+                const eventExists = !!order.event;
+                return (
                 <Link
                   key={order._id}
                   to={`/ticket/${order._id}`}
                   className="group bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col md:flex-row gap-5 hover:border-[#f72585]/20 hover:shadow-[0_0_30px_rgba(247,37,133,0.08)] transition-all duration-300 block animate-fade-in-up"
                   style={{ animationDelay: `${i * 100}ms` }}
                 >
-                  <img src={order.event.eventImage} alt={order.event.title} className="w-full md:w-32 h-32 md:h-24 rounded-xl object-cover brightness-75 group-hover:brightness-90 transition-all shrink-0" />
+                  <img src={eventExists ? order.event.eventImage : "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800"} alt={eventExists ? order.event.title : "Event Ended"} className="w-full md:w-32 h-32 md:h-24 rounded-xl object-cover brightness-75 group-hover:brightness-90 transition-all shrink-0" />
                   <div className="flex-1">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="font-bold text-white uppercase tracking-tight group-hover:text-[#f72585] transition-colors">{order.event.title}</h3>
-                        <p className="text-sm text-[#00f5ff] mt-1">{order.event.eventArtistName}</p>
+                        <h3 className="font-bold text-white uppercase tracking-tight group-hover:text-[#f72585] transition-colors">{eventExists ? order.event.title : "[ Deleted Event ]"}</h3>
+                        <p className="text-sm text-[#00f5ff] mt-1">{eventExists ? order.event.eventArtistName : "Artist Unavailable"}</p>
                       </div>
                       <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${statusColors[order.status]}`}>{order.status}</span>
                     </div>
@@ -110,7 +98,7 @@ export default function Profile() {
                     <span className="text-xs text-white/20 group-hover:text-[#f72585]/60 transition-colors mt-2">View Ticket →</span>
                   </div>
                 </Link>
-              ))
+              )})
             ) : (
               <div className="bg-white/5 border border-white/10 rounded-2xl p-12 text-center">
                 <p className="text-white/20 uppercase tracking-widest">No tickets booked yet</p>

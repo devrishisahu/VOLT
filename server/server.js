@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import colors from "colors";
+import path from "path";
 
 // Local routes
 import connectDB from "./config/dbconfig.js";
@@ -10,10 +11,9 @@ import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import eventRoutes from "./routes/eventRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
-import commentRoutes from "./routes/commentRoutes.js"
+import commentRoutes from "./routes/commentRoutes.js";
 import creditRoutes from "./routes/creditRoutes.js";
-import giveAnswer from "./controllers/chatController.js";
-import protect from "./middleware/authMiddleware.js";
+import chatRoutes from "./routes/chatRoutes.js";
 
 dotenv.config();
 
@@ -29,13 +29,22 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded());
 
-// default Route
+// Serve Frontend
 
-app.get("/", (req, res) => {
-  res.json({
-    message: "WELCOME TO MOODGO API",
+if (process.env.NODE_ENV === "production") {
+  const __dirname = path.resolve();
+  app.use(express.static(path.join(__dirname, "/client/dist")));
+
+  app.get("*", (req, res) =>
+    res.sendFile(path.resolve(__dirname, "client", "dist", "index.html"))
+  );
+} else {
+  app.get("/", (req, res) => {
+    res.json({
+      message: "WELCOME TO MOODGO API",
+    });
   });
-});
+}
 
 // Auth Routes
 
@@ -60,9 +69,7 @@ app.use("/api/comment/" , commentRoutes)
 // Credit Routes
 app.use("/api/credits", creditRoutes);
 
-//Chat Routes
-
-app.post("/api/chat" , protect.forUser , giveAnswer)
+app.use("/api/chat", chatRoutes);
 
 // Error Handler
 

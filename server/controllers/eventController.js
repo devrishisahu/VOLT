@@ -4,7 +4,7 @@ import Event from "../models/eventModel.js"
 
 const createEvent = async (req, res) => {
 
-  const {title , description , eventDate , eventLocation , eventArtistName , totalSeats , duration , ticketPrice } = req.body;
+  const {title , description , eventDate , eventLocation , eventArtistName , totalSeats , duration , ticketPrice, genre } = req.body;
 
   if (!title || !description || !eventDate || !eventLocation || !eventArtistName || !totalSeats || !duration || !ticketPrice ) {
 
@@ -15,17 +15,30 @@ const createEvent = async (req, res) => {
 
 
   //Upload Image To Cloudinary
-const uploadResult = await uploadToCloudinary(req.file.path)
-
-// remove from Server
-
+  let uploadResult;
+  try {
+    uploadResult = await uploadToCloudinary(req.file.path);
+  } finally {
+    // remove from Server
+    if (fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
-
-  
+    }
+  }
   // Create event
-
-  const newEvent = await Event.create({ user: req.user._id , title , description , eventDate , eventLocation , eventArtistName , totalSeats , duration , ticketPrice , eventImage: uploadResult.secure_url  })
-
+  const newEvent = await Event.create({ 
+    user: req.user._id, 
+    title, 
+    description, 
+    eventDate, 
+    eventLocation, 
+    eventArtistName, 
+    totalSeats, 
+    duration, 
+    ticketPrice, 
+    genre,
+    eventImage: uploadResult.secure_url,
+    isActive: req.user.isAdmin // Auto-approve if submitted by an admin
+  });
   if(!newEvent){
     res.status(400)
     throw new Error("Event not Created")
@@ -78,6 +91,12 @@ res.status(200).json(event)
 
 
 
-const eventController = { createEvent , getEvents , getEvent };
+// Get My Events
+const getMyEvents = async (req, res) => {
+  const events = await Event.find({ user: req.user._id }).sort({ createdAt: -1 });
+  res.status(200).json(events);
+}
+
+const eventController = { createEvent , getEvents , getEvent, getMyEvents };
 
 export default eventController;

@@ -28,8 +28,18 @@ export const updateRequestStatus = createAsyncThunk("CREDITS/UPDATE_STATUS", asy
     }
 })
 
+export const getMyRequests = createAsyncThunk("CREDITS/GET_MINE", async (_, thunkAPI) => {
+    try {
+        const token = thunkAPI.getState().auth.user.token
+        return await creditService.getMyRequests(token)
+    } catch (error) {
+        return thunkAPI.rejectWithValue(error.response?.data?.message || error.message)
+    }
+})
+
 const initialState = {
     requests: [],
+    myRequests: [],
     isLoading: false,
     isSuccess: false,
     isError: false,
@@ -52,9 +62,10 @@ const creditSlice = createSlice({
             .addCase(requestCredits.pending, (state) => {
                 state.isLoading = true
             })
-            .addCase(requestCredits.fulfilled, (state) => {
+            .addCase(requestCredits.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
+                state.myRequests.unshift(action.payload)
             })
             .addCase(requestCredits.rejected, (state, action) => {
                 state.isLoading = false
@@ -68,8 +79,25 @@ const creditSlice = createSlice({
                 state.isLoading = false
                 state.requests = action.payload
             })
+            .addCase(getAdminRequests.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
+            })
             .addCase(updateRequestStatus.fulfilled, (state, action) => {
                 state.requests = state.requests.map(req => req._id === action.payload._id ? action.payload : req)
+            })
+            .addCase(getMyRequests.pending, (state) => {
+                state.isLoading = true
+            })
+            .addCase(getMyRequests.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.myRequests = action.payload
+            })
+            .addCase(getMyRequests.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
             })
     }
 })

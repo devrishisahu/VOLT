@@ -1,21 +1,36 @@
+import axios from 'axios';
+
+const API_URL = '/api/credits/';
+
 const requestCredits = async (amount, token) => {
-    return { _id: Date.now().toString(), amount, status: 'pending', user: 'currentUser' }
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+    const response = await axios.post(API_URL + 'request', { amount }, config);
+    return response.data;
 }
 
 const getAdminRequests = async (token) => {
-    return [
-        { _id: 'req1', amount: 500, status: 'pending', user: { name: 'Arjun Mehta', email: 'arjun@volt.com' } }
-    ]
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+    const response = await axios.get(API_URL + 'admin/requests', config);
+    return response.data;
 }
 
 const updateRequestStatus = async (id, status, token) => {
-    return { _id: id, amount: 500, status: status, user: { name: 'Arjun Mehta', email: 'arjun@volt.com' } }
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+    const response = await axios.put(API_URL + 'admin/request/' + id, { status }, config);
+    return response.data;
+}
+
+const getMyRequests = async (token) => {
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+    const response = await axios.get(API_URL + 'myrequests', config);
+    return response.data;
 }
 
 const creditService = {
     requestCredits,
     getAdminRequests,
-    updateRequestStatus
+    updateRequestStatus,
+    getMyRequests
 }
 
 export default creditService;

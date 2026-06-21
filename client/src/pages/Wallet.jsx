@@ -1,16 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { requestCredits } from '../features/credits/creditSlice';
+import { requestCredits, getMyRequests } from '../features/credits/creditSlice';
+import { syncUser } from '../features/auth/authSlice';
 import Footer from '../components/Footer';
 import { toast } from 'react-toastify';
-
-const transactions = [
-  { id: 1, type: 'Credit Added', amount: '+200', date: '2025-05-01', desc: 'Welcome bonus' },
-  { id: 2, type: 'Redeemed', amount: '-100', date: '2025-05-05', desc: 'Cyber Punk Symphony booking' },
-  { id: 3, type: 'Credit Added', amount: '+300', date: '2025-05-10', desc: 'Referral reward' },
-  { id: 4, type: 'Redeemed', amount: '-50', date: '2025-05-15', desc: 'Midnight Rave booking' },
-  { id: 5, type: 'Credit Added', amount: '+150', date: '2025-05-20', desc: 'Cashback offer' },
-];
 
 export default function Wallet() {
   const [showRequest, setShowRequest] = useState(false);
@@ -18,7 +11,12 @@ export default function Wallet() {
   
   const dispatch = useDispatch();
   const { user } = useSelector(state => state.auth);
-  const { isLoading } = useSelector(state => state.credits);
+  const { isLoading, myRequests } = useSelector(state => state.credits);
+
+  useEffect(() => {
+    dispatch(syncUser());
+    dispatch(getMyRequests());
+  }, [dispatch]);
 
   const handleRequest = (e) => {
     e.preventDefault();
@@ -46,7 +44,7 @@ export default function Wallet() {
 
             <div className="relative z-10">
               <p className="text-xs uppercase tracking-[0.3em] text-white/40 font-mono">Volt Credits</p>
-              <p className="text-6xl md:text-8xl font-black text-[#f72585] mt-4 animate-fade-in-up animation-delay-200">{user.credits}</p>
+              <p className="text-6xl md:text-8xl font-black text-[#f72585] mt-4 animate-fade-in-up animation-delay-200">{Number(user.credits).toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
               <p className="text-white/30 mt-2">Available balance</p>
               <button 
                 onClick={() => setShowRequest(true)}
@@ -110,34 +108,40 @@ export default function Wallet() {
             </div>
           </div>
 
-          {/* Transaction History */}
+          {/* Credit Requests History */}
           <div className="mt-10 animate-fade-in-up animation-delay-400">
-            <h2 className="text-xl font-bold text-white uppercase tracking-tight mb-6">Transaction History</h2>
+            <h2 className="text-xl font-bold text-white uppercase tracking-tight mb-6">Credit Requests</h2>
             <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
               {/* Table Header */}
-              <div className="hidden md:grid grid-cols-4 gap-4 px-6 py-3 border-b border-white/10 text-xs text-white/30 uppercase tracking-wider">
-                <span>Type</span>
-                <span>Description</span>
+              <div className="hidden md:grid grid-cols-3 gap-4 px-6 py-3 border-b border-white/10 text-xs text-white/30 uppercase tracking-wider">
                 <span>Date</span>
+                <span>Status</span>
                 <span className="text-right">Amount</span>
               </div>
               {/* Rows */}
-              {transactions.map((tx, i) => (
-                <div key={tx.id} className={`grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-4 px-6 py-4 ${i % 2 === 0 ? 'bg-white/[0.02]' : ''} border-b border-white/5 last:border-b-0`}>
-                  <div>
-                    <span className={`text-sm font-semibold ${tx.amount.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>{tx.type}</span>
+              {myRequests?.length === 0 ? (
+                <div className="p-8 text-center text-white/30 italic text-sm">No credit requests yet</div>
+              ) : (
+                myRequests?.map((req, i) => (
+                  <div key={req._id} className={`grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 px-6 py-4 ${i % 2 === 0 ? 'bg-white/[0.02]' : ''} border-b border-white/5 last:border-b-0`}>
+                    <div>
+                      <span className="text-sm text-white/50">{new Date(req.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <div>
+                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        req.status === 'pending' ? 'bg-amber-500/10 text-amber-500' :
+                        req.status === 'approved' ? 'bg-green-500/10 text-green-500' :
+                        'bg-red-500/10 text-red-500'
+                      }`}>
+                        {req.status}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-sm font-mono font-bold text-[#00f5ff]">+{req.amount}</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-sm text-white/50">{tx.desc}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm text-white/30">{tx.date}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className={`text-sm font-bold ${tx.amount.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>{tx.amount}</span>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>

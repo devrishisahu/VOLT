@@ -54,6 +54,11 @@ const eventSchema = new mongoose.Schema(
       required: true,
       default: false,
     },
+    genre: {
+      type: String,
+      enum: ["ROCK", "POP", "EDM", "TECHNO", "HIP HOP"],
+      required: false,
+    },
   },
   {
     timestamps: true,

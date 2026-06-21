@@ -6,6 +6,7 @@ const router = express.Router()
 
 router.get ("/:eid" , commentController.getComments)
 router.post ("/:eid" ,protect.forUser, commentController.addComment)
+router.delete("/:cid" , protect.forUser, commentController.deleteComment)
 
 
 

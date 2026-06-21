@@ -15,8 +15,19 @@ const liveShows = [
 
 export default function Home() {
   const [scrollY, setScrollY] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeGenre, setActiveGenre] = useState('ALL GENRES');
+  const [showTrailer, setShowTrailer] = useState(false);
+
   const dispatch = useDispatch();
   const { events, isLoading } = useSelector((state) => state.event);
+
+  const filteredEvents = events?.filter(event => {
+    const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          event.eventArtistName.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesGenre = activeGenre === 'ALL GENRES' || event.genre?.toUpperCase() === activeGenre;
+    return matchesSearch && matchesGenre;
+  });
 
   useEffect(() => {
     dispatch(getEvents());
@@ -66,7 +77,7 @@ export default function Home() {
             <Link to="/events" className="px-8 py-4 bg-[#f72585] text-white font-bold uppercase tracking-wider rounded-lg hover:shadow-[0_0_30px_rgba(247,37,133,0.5)] transition-all duration-300 hover:scale-105">
               Enter The Stage
             </Link>
-            <button className="px-8 py-4 bg-white/5 backdrop-blur-md border border-white/20 text-white font-bold uppercase tracking-wider rounded-lg hover:bg-white/10 transition-all duration-300 flex items-center gap-2">
+            <button onClick={() => setShowTrailer(true)} className="px-8 py-4 bg-white/5 backdrop-blur-md border border-white/20 text-white font-bold uppercase tracking-wider rounded-lg hover:bg-white/10 transition-all duration-300 flex items-center gap-2">
               <span className="w-6 h-6 rounded-full border-2 border-white/40 flex items-center justify-center text-xs">▶</span>
               View Trailer
             </button>
@@ -82,14 +93,21 @@ export default function Home() {
         <div className="max-w-5xl mx-auto bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2 flex-1 min-w-[200px]">
             <span className="text-white/30">🔍</span>
-            <input type="text" placeholder="Search events..." className="bg-transparent text-sm text-white placeholder:text-white/30 outline-none w-full" />
+            <input 
+              type="text" 
+              placeholder="Search events..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-transparent text-sm text-white placeholder:text-white/30 outline-none w-full" 
+            />
           </div>
           <div className="flex gap-2 flex-wrap">
             {genres.map((g, i) => (
               <span
                 key={g}
+                onClick={() => setActiveGenre(g)}
                 className={`px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider cursor-pointer transition-all duration-200 ${
-                  i === 0
+                  activeGenre === g
                     ? 'bg-[#f72585] text-white shadow-[0_0_15px_rgba(247,37,133,0.3)]'
                     : 'bg-white/5 text-white/50 hover:text-white hover:bg-white/10'
                 }`}
@@ -115,20 +133,20 @@ export default function Home() {
             <Link to="/events" className="text-[#f72585] text-sm font-semibold hover:underline uppercase tracking-wider hidden md:block">View All Lineup →</Link>
           </div>
 
-          {events.length > 0 ? (
+          {filteredEvents?.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Large featured card */}
               <div className="lg:col-span-2 group relative rounded-2xl overflow-hidden h-[400px] md:h-[500px] hover:scale-[1.02] transition-transform duration-500 cursor-pointer">
-                <img src={events[0].eventImage} alt={events[0].title} className="w-full h-full object-cover brightness-50 group-hover:brightness-[0.4] transition-all duration-500 group-hover:scale-105" />
+                <img src={filteredEvents[0].eventImage} alt={filteredEvents[0].title} className="w-full h-full object-cover brightness-50 group-hover:brightness-[0.4] transition-all duration-500 group-hover:scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                 <div className="absolute top-6 left-6 flex gap-2">
                   <span className="px-3 py-1 bg-[#f72585] text-white text-[10px] font-bold uppercase tracking-widest rounded-full">Headline</span>
                   <span className="px-3 py-1 bg-white/10 backdrop-blur text-white text-[10px] font-bold uppercase tracking-widest rounded-full">Global Tour 2025</span>
                 </div>
                 <div className="absolute bottom-6 left-6 right-6">
-                  <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-white">{events[0].title}</h3>
-                  <p className="text-white/50 mt-2 line-clamp-2">{events[0].description}</p>
-                  <Link to={`/events/${events[0]._id}`} className="inline-block mt-4 px-6 py-3 bg-[#f72585] text-white text-sm font-bold uppercase tracking-wider rounded-lg hover:shadow-[0_0_30px_rgba(247,37,133,0.5)] transition-all">
+                  <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-white">{filteredEvents[0].title}</h3>
+                  <p className="text-white/50 mt-2 line-clamp-2">{filteredEvents[0].description}</p>
+                  <Link to={`/events/${filteredEvents[0]._id}`} className="inline-block mt-4 px-6 py-3 bg-[#f72585] text-white text-sm font-bold uppercase tracking-wider rounded-lg hover:shadow-[0_0_30px_rgba(247,37,133,0.5)] transition-all">
                     Get Tickets
                   </Link>
                 </div>
@@ -136,7 +154,7 @@ export default function Home() {
 
               {/* Two smaller cards */}
               <div className="flex flex-col gap-6">
-                {events.slice(1, 3).map((event) => (
+                {filteredEvents.slice(1, 3).map((event) => (
                   <Link key={event._id} to={`/events/${event._id}`} className="group relative rounded-2xl overflow-hidden h-[190px] md:h-[237px] hover:scale-[1.02] transition-transform duration-500">
                     <img src={event.eventImage} alt={event.title} className="w-full h-full object-cover brightness-50 group-hover:brightness-[0.35] transition-all duration-500 group-hover:scale-105" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
@@ -149,16 +167,38 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="h-64 bg-white/5 rounded-2xl animate-pulse" />
-              ))}
+            <div className="w-full py-20 flex flex-col items-center justify-center text-center bg-white/5 rounded-2xl border border-white/10">
+              <span className="text-4xl mb-4">🔍</span>
+              <h3 className="text-xl font-bold text-white mb-2">No events found</h3>
+              <p className="text-white/40">Try adjusting your search or genre filter.</p>
             </div>
           )}
         </div>
       </section>
 
       <Footer />
+
+      {/* Trailer Overlay */}
+      {showTrailer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm animate-fade-in-up">
+          <button 
+            onClick={() => setShowTrailer(false)}
+            className="absolute top-6 right-6 w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 text-white rounded-full transition-all text-xl"
+          >
+            ✕
+          </button>
+          <div className="w-full max-w-5xl aspect-video px-4">
+            <iframe 
+              className="w-full h-full rounded-2xl shadow-[0_0_50px_rgba(247,37,133,0.3)]"
+              src="https://www.youtube.com/embed/hZDJjSHHGok?autoplay=1&controls=0&showinfo=0&rel=0&modestbranding=1&disablekb=1" 
+              title="Concert Trailer" 
+              frameBorder="0" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+              allowFullScreen
+            ></iframe>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
