@@ -29,23 +29,6 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded());
 
-// Serve Frontend
-
-if (process.env.NODE_ENV === "production") {
-  const __dirname = path.resolve();
-  app.use(express.static(path.join(__dirname, "/client/dist")));
-
-  app.get("*", (req, res) =>
-    res.sendFile(path.resolve(__dirname, "client", "dist", "index.html"))
-  );
-} else {
-  app.get("/", (req, res) => {
-    res.json({
-      message: "WELCOME TO VOLT API",
-    });
-  });
-}
-
 // Auth Routes
 
 app.use("/api/auth", authRoutes);
@@ -70,6 +53,22 @@ app.use("/api/comment/" , commentRoutes)
 app.use("/api/credits", creditRoutes);
 
 app.use("/api/chat", chatRoutes);
+
+// Serve Frontend
+if (process.env.NODE_ENV === "production") {
+  const __dirname = path.resolve();
+  app.use(express.static(path.join(__dirname, "/client/dist")));
+
+  app.get(/(.*)/, (req, res) =>
+    res.sendFile(path.resolve(__dirname, "client", "dist", "index.html"))
+  );
+} else {
+  app.get("/", (req, res) => {
+    res.json({
+      message: "WELCOME TO VOLT API",
+    });
+  });
+}
 
 // Error Handler
 
